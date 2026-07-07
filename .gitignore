@@ -1,0 +1,39 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Node
+node_modules/
+
+# VS Code
+.vscode/settings.json
+
+# Cursor
+.cursor/index
+
+# Logs
+logs/
+*.log
+
+# Environment
+.env
+.env.*
+
+# Ollama
+models/
+
+# Docker
+*.pid
+
+# Temporary
+tmp/
+temp/
+
+# Workspace
+workspace/tmp/
+
