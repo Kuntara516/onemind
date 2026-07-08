@@ -1,0 +1,52 @@
+<mxfile host="Electron">
+  <diagram name="Page-1" id="LFWIBApUnwwVucQSvuQq">
+    <mxGraphModel dx="3008" dy="1798" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="8Vccsmg6Kp-N78hfmJ5Q-1" parent="1" style="text;whiteSpace=wrap;html=1;align=center;" value="&lt;font face=&quot;Arial&quot; style=&quot;&quot;&gt;&lt;font style=&quot;font-size: 30px;&quot;&gt;OneMind&lt;/font&gt;&lt;br&gt;&lt;span style=&quot;font-size: 18px;&quot;&gt;Many Agents. One Mind&lt;br&gt;&lt;/span&gt;&lt;/font&gt;&lt;font style=&quot;font-size: 14px;&quot;&gt;C4 Context Diagram&amp;nbsp;&lt;/font&gt;" vertex="1">
+          <mxGeometry height="70" width="310" x="710" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="8Vccsmg6Kp-N78hfmJ5Q-24" edge="1" parent="1" source="8Vccsmg6Kp-N78hfmJ5Q-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="8Vccsmg6Kp-N78hfmJ5Q-11" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="8Vccsmg6Kp-N78hfmJ5Q-25" edge="1" parent="1" source="8Vccsmg6Kp-N78hfmJ5Q-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="8Vccsmg6Kp-N78hfmJ5Q-15" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="8Vccsmg6Kp-N78hfmJ5Q-3" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=center;" value="&lt;pre&gt;&lt;font face=&quot;Helvetica&quot; style=&quot;&quot;&gt;&lt;font style=&quot;&quot;&gt;&lt;font style=&quot;&quot;&gt; Knowledge and &lt;br&gt;Data Sources&lt;br&gt;&lt;br&gt;&lt;font style=&quot;font-size: 8px;&quot;&gt;Databases |Documents | IoT | Files | Knowledge Sources&lt;/font&gt;&lt;/font&gt;&lt;/font&gt;&lt;br&gt;&lt;/font&gt;&lt;/pre&gt;" vertex="1">
+          <mxGeometry height="130" width="230" x="450" y="640" as="geometry" />
+        </mxCell>
+        <mxCell id="8Vccsmg6Kp-N78hfmJ5Q-6" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=center;" value="&lt;pre&gt;&lt;font face=&quot;Helvetica&quot;&gt;&lt;br&gt;OneMind Platform&lt;br&gt;&lt;br&gt;Many Agents &lt;br&gt;One Mind&lt;br&gt;&lt;/font&gt;&lt;font face=&quot;Helvetica&quot;&gt;&lt;font style=&quot;font-size: 8px;&quot;&gt;&lt;br&gt;&lt;/font&gt;AI Operating Platform&lt;/font&gt;&lt;font style=&quot;font-size: 8px;&quot;&gt;&lt;font face=&quot;Helvetica&quot;&gt;&lt;br&gt;&lt;/font&gt;&lt;font face=&quot;Helvetica&quot;&gt;&lt;br&gt;&lt;/font&gt;&lt;/font&gt;&lt;/pre&gt;" vertex="1">
+          <mxGeometry height="130" width="230" x="750" y="440" as="geometry" />
+        </mxCell>
+        <mxCell id="8Vccsmg6Kp-N78hfmJ5Q-19" edge="1" parent="1" source="8Vccsmg6Kp-N78hfmJ5Q-8" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=classic;startFill=1;" target="8Vccsmg6Kp-N78hfmJ5Q-6" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="8Vccsmg6Kp-N78hfmJ5Q-8" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=center;" value="&lt;pre&gt;&lt;font face=&quot;Helvetica&quot;&gt;AI Providers&lt;br&gt;&lt;/font&gt;&lt;font style=&quot;&quot;&gt;&lt;font face=&quot;Helvetica&quot; style=&quot;font-size: 8px;&quot;&gt;&lt;br&gt;OpenAI | Claude  | Gemini  | Ollama&lt;br&gt;Future LLMs&lt;/font&gt;&lt;font face=&quot;Helvetica&quot; style=&quot;font-size: 8px;&quot;&gt;&lt;br&gt;&lt;br&gt;&lt;/font&gt;&lt;/font&gt;&lt;/pre&gt;" vertex="1">
+          <mxGeometry height="130" width="230" x="1050" y="440" as="geometry" />
+        </mxCell>
+        <mxCell id="8Vccsmg6Kp-N78hfmJ5Q-21" edge="1" parent="1" source="8Vccsmg6Kp-N78hfmJ5Q-11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="8Vccsmg6Kp-N78hfmJ5Q-6" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="8Vccsmg6Kp-N78hfmJ5Q-11" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=center;" value="&lt;pre&gt;&lt;font face=&quot;Helvetica&quot;&gt;Enterprise System&lt;br&gt;&lt;br&gt;&lt;/font&gt;&lt;font face=&quot;Helvetica&quot; style=&quot;&quot;&gt;&lt;span style=&quot;font-size: 8px;&quot;&gt;Hospital HIS | ERP | HR System | CRM&lt;br&gt;Document Management | LDAP | Active Directory&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;/span&gt;&lt;/font&gt;&lt;font face=&quot;Helvetica&quot;&gt;&lt;/font&gt;&lt;/pre&gt;" vertex="1">
+          <mxGeometry height="130" width="230" x="450" y="440" as="geometry" />
+        </mxCell>
+        <mxCell id="8Vccsmg6Kp-N78hfmJ5Q-22" edge="1" parent="1" source="8Vccsmg6Kp-N78hfmJ5Q-13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="8Vccsmg6Kp-N78hfmJ5Q-6" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="8Vccsmg6Kp-N78hfmJ5Q-13" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=center;" value="&lt;pre&gt;&lt;font face=&quot;Helvetica&quot;&gt;Users&lt;br&gt;&lt;/font&gt;&lt;font face=&quot;Helvetica&quot; style=&quot;&quot;&gt;&lt;span style=&quot;font-size: 8px;&quot;&gt;&lt;br&gt;Citizen | Resident | Employee | Operator&lt;br&gt;Manager | Administrator | Developer&lt;br&gt;&lt;br&gt;&lt;/span&gt;&lt;/font&gt;&lt;font face=&quot;Helvetica&quot;&gt;&lt;/font&gt;&lt;/pre&gt;" vertex="1">
+          <mxGeometry height="130" width="230" x="750" y="230" as="geometry" />
+        </mxCell>
+        <mxCell id="8Vccsmg6Kp-N78hfmJ5Q-23" edge="1" parent="1" source="8Vccsmg6Kp-N78hfmJ5Q-15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="8Vccsmg6Kp-N78hfmJ5Q-6" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="8Vccsmg6Kp-N78hfmJ5Q-15" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=center;" value="&lt;pre&gt;&lt;font face=&quot;Helvetica&quot;&gt;Communication Services&lt;br&gt;&lt;/font&gt;&lt;font face=&quot;Helvetica&quot;&gt;&lt;br&gt;&lt;font style=&quot;&quot;&gt;&lt;span style=&quot;font-size: 8px;&quot;&gt;Email | LINE | SMS |Push Notification&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;/span&gt;&lt;/font&gt;&lt;/font&gt;&lt;/pre&gt;" vertex="1">
+          <mxGeometry height="130" width="230" x="750" y="640" as="geometry" />
+        </mxCell>
+        <mxCell id="8Vccsmg6Kp-N78hfmJ5Q-17" edge="1" parent="1" source="8Vccsmg6Kp-N78hfmJ5Q-13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="8Vccsmg6Kp-N78hfmJ5Q-13">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

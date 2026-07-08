@@ -1,0 +1,46 @@
+<mxfile host="Electron">
+  <diagram name="Page-1" id="_79iLiF4W43gUJx6EwjZ">
+    <mxGraphModel dx="1851" dy="1106" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="1654" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="vnehW9s4fOg0KUzalMs8-1" parent="1" style="text;whiteSpace=wrap;html=1;align=center;" value="&lt;font face=&quot;Arial&quot; style=&quot;&quot;&gt;&lt;font style=&quot;font-size: 30px;&quot;&gt;OneMind&lt;/font&gt;&lt;br&gt;&lt;span style=&quot;font-size: 18px;&quot;&gt;Many Agents. One Mind&lt;br&gt;&lt;/span&gt;&lt;/font&gt;&lt;font style=&quot;font-size: 18px;&quot;&gt;Capability&amp;nbsp; Map&lt;/font&gt;" vertex="1">
+          <mxGeometry height="70" width="310" x="430" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="vnehW9s4fOg0KUzalMs8-2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=center;" value="&lt;pre&gt;&lt;font style=&quot;&quot;&gt;&lt;font face=&quot;Helvetica&quot;&gt;&lt;br&gt;&lt;br&gt;Core Capabilities&lt;br&gt;&lt;/font&gt;&lt;font style=&quot;font-size: 12px;&quot; face=&quot;Helvetica&quot;&gt;&lt;br&gt;&lt;/font&gt;&lt;br&gt;&lt;/font&gt;&lt;/pre&gt;" vertex="1">
+          <mxGeometry height="60" width="150" x="510" y="270" as="geometry" />
+        </mxCell>
+        <mxCell id="vnehW9s4fOg0KUzalMs8-3" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=center;" value="&lt;p&gt;Experience&lt;/p&gt;" vertex="1">
+          <mxGeometry height="120" width="120" x="290" y="370" as="geometry" />
+        </mxCell>
+        <mxCell id="vnehW9s4fOg0KUzalMs8-11" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=center;" value="&lt;pre&gt;&lt;font face=&quot;Helvetica&quot; style=&quot;font-size: 12px;&quot;&gt;Identity&lt;/font&gt;&lt;/pre&gt;" vertex="1">
+          <mxGeometry height="120" width="120" x="410" y="370" as="geometry" />
+        </mxCell>
+        <mxCell id="vnehW9s4fOg0KUzalMs8-12" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=center;" value="&lt;pre&gt;&lt;font face=&quot;Helvetica&quot; style=&quot;font-size: 12px;&quot;&gt;AI Orchestration&lt;/font&gt;&lt;/pre&gt;" vertex="1">
+          <mxGeometry height="120" width="120" x="530" y="370" as="geometry" />
+        </mxCell>
+        <mxCell id="vnehW9s4fOg0KUzalMs8-13" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=center;" value="&lt;pre&gt;&lt;font face=&quot;Helvetica&quot; style=&quot;font-size: 12px;&quot;&gt;Knowledge &lt;br&gt;Management&lt;/font&gt;&lt;/pre&gt;" vertex="1">
+          <mxGeometry height="120" width="120" x="650" y="370" as="geometry" />
+        </mxCell>
+        <mxCell id="vnehW9s4fOg0KUzalMs8-14" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=center;" value="&lt;pre&gt;&lt;font face=&quot;Helvetica&quot; style=&quot;font-size: 12px;&quot;&gt;Workflow &lt;br&gt;Automatio&lt;/font&gt;&lt;font face=&quot;Helvetica&quot; style=&quot;font-size: 12px;&quot;&gt;n&lt;/font&gt;&lt;/pre&gt;" vertex="1">
+          <mxGeometry height="120" width="120" x="770" y="370" as="geometry" />
+        </mxCell>
+        <mxCell id="vnehW9s4fOg0KUzalMs8-15" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=center;" value="&lt;pre&gt;&lt;font face=&quot;Helvetica&quot; style=&quot;font-size: 12px;&quot;&gt;Memory &lt;br&gt;Management&lt;/font&gt;&lt;/pre&gt;" vertex="1">
+          <mxGeometry height="120" width="120" x="290" y="490" as="geometry" />
+        </mxCell>
+        <mxCell id="vnehW9s4fOg0KUzalMs8-16" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=center;" value="&lt;pre&gt;&lt;font face=&quot;Helvetica&quot; style=&quot;font-size: 12px;&quot;&gt;Integration&lt;/font&gt;&lt;/pre&gt;" vertex="1">
+          <mxGeometry height="120" width="120" x="410" y="490" as="geometry" />
+        </mxCell>
+        <mxCell id="vnehW9s4fOg0KUzalMs8-17" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=center;" value="&lt;pre&gt;&lt;font face=&quot;Helvetica&quot; style=&quot;font-size: 12px;&quot;&gt;Notification&lt;/font&gt;&lt;/pre&gt;" vertex="1">
+          <mxGeometry height="120" width="120" x="530" y="490" as="geometry" />
+        </mxCell>
+        <mxCell id="vnehW9s4fOg0KUzalMs8-18" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=center;" value="&lt;pre&gt;&lt;font face=&quot;Helvetica&quot; style=&quot;font-size: 12px;&quot;&gt;Monitoring&lt;/font&gt;&lt;/pre&gt;" vertex="1">
+          <mxGeometry height="120" width="120" x="650" y="490" as="geometry" />
+        </mxCell>
+        <mxCell id="vnehW9s4fOg0KUzalMs8-19" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=center;" value="&lt;pre&gt;&lt;font face=&quot;Helvetica&quot; style=&quot;font-size: 12px;&quot;&gt;Administration&lt;/font&gt;&lt;/pre&gt;" vertex="1">
+          <mxGeometry height="120" width="120" x="770" y="490" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
