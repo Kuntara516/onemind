@@ -37,3 +37,7 @@ temp/
 # Workspace
 workspace/tmp/
 
+# macOS temp
+.DS_Store
+._*
+.$*
