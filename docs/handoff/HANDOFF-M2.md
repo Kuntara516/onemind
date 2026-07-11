@@ -509,3 +509,189 @@ OneMind ไม่ใช่เพียงโครงการพัฒนาซ
 
 หลักการสำคัญของโครงการคือ **Business Capability First, AI Native, Knowledge Centric และ Platform Agnostic** เพื่อให้แพลตฟอร์มสามารถเติบโตได้อย่างยั่งยืน รองรับการขยายไปสู่ Domain เฉพาะทางในอนาคต โดยยังคงใช้ Core Platform ชุดเดียวกัน
 
+# HANDOFF-M2
+
+## Milestone
+
+M2 Architecture Blueprint (Frozen)
+
+Status:
+✅ Completed
+
+Version:
+v0.2.0-m2
+
+Date:
+2026-07-10
+
+---
+
+# Repository Baseline
+
+Current repository structure is the official M2 baseline.
+
+No folder restructuring after this point.
+
+Future structural improvements must be proposed through Architecture Backlog.
+
+---
+
+# Completed Domains
+
+## Vision
+...
+
+## Business
+...
+
+## System
+...
+
+## Data
+...
+
+## AI
+...
+
+## Security
+...
+
+## Integration
+...
+
+## Deployment
+...
+
+## Technology
+...
+
+## Reference Architecture
+...
+
+---
+
+# Major Deliverables
+
+- Architecture Blueprint
+- Business Capability Map
+- System Architecture
+- Data Architecture
+- AI Architecture
+- Security Architecture
+- Integration Architecture
+- Deployment Architecture
+- Technology Architecture
+- Reference Architecture (C4)
+
+Total documents:
+(xx)
+
+---
+
+# Decisions
+
+ADR-001 PostgreSQL
+
+ADR-002 Qdrant
+
+ADR-003 LiteLLM
+
+---
+
+# Repository Structure
+
+(แปะ tree)
+
+---
+
+# Known Issues
+
+None affecting architecture.
+
+---
+
+# Architecture Backlog (M3)
+
+## Repository
+
+- Review diagram organization
+- Evaluate reference/README consistency
+- Cross-reference validation script
+- Broken-link checker
+
+## Documentation
+
+- Architecture Roadmap
+- Dependency Map
+- Glossary
+- Architecture Principles
+- Architecture Review Checklist
+
+## Modeling
+
+- ERD
+- Sequence Diagram
+- BPMN
+- C4 diagrams refinement
+
+## Engineering
+
+- API Specifications
+- Database Specifications
+- Infrastructure Reference
+- Kubernetes Reference
+- GPU Architecture
+
+## Governance
+
+- Architecture Review Board
+- ADR workflow
+- Review Checklist
+
+---
+
+# M3 Objectives
+
+Implementation Architecture
+
+Engineering Specifications
+
+Reference Implementations
+
+Developer Guides
+
+Architecture Patterns
+
+---
+
+# Freeze Policy
+
+M2 is frozen.
+
+No repository restructuring.
+
+No document renaming.
+
+No document relocation.
+
+All improvements shall enter the backlog.
+
+---
+
+# Next Session
+
+Start Milestone M3.
+
+# Frozen Baseline
+
+This milestone is frozen.
+
+Repository structure is fixed.
+
+Folder names are fixed.
+
+Document IDs are fixed.
+
+Future improvements must be added to Architecture Backlog.
+
+No restructuring during implementation.
