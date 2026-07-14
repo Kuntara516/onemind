@@ -1,3 +1,109 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+This project follows a milestone-based release model.
+
+---
+
+## [v0.5.0-m5] - 2026-07-14
+
+### Milestone
+
+**M5 – Solution Design**
+
+This milestone establishes the Solution Design layer of the OneMind Enterprise AI Operating Platform, transforming the architectural foundations created in M1–M4 into implementation-ready enterprise design standards.
+
+---
+
+### Added
+
+#### Solution Design Foundation
+
+* Added **M5 Roadmap Freeze** document.
+* Added **Repository Design Principles** for long-term repository governance.
+* Added Solution Design Overview.
+* Added Solution Design Principles.
+
+#### Domain & Component Design
+
+* Added Domain Design.
+* Added Component Design.
+* Added Service Design.
+* Added Application Design.
+
+#### API & Integration Design
+
+* Added API Design Standards.
+* Added Integration Design.
+* Added External Integration Design.
+* Added API Governance.
+
+#### Data, Events & Messaging
+
+* Added Data Design.
+* Added Database Design.
+* Added Event Design.
+* Added Messaging Design.
+
+#### AI, Agents & Prompt Design
+
+* Added Agent Design Standards.
+* Added Multi-Agent Collaboration.
+* Added Prompt Engineering Standards.
+* Added Context Engineering.
+* Added Reasoning Pattern Design.
+* Added Agent Governance, Safety and Trust.
+
+#### Infrastructure & Platform Design
+
+* Added Infrastructure Design Standards.
+* Added Deployment Architecture.
+* Added Container and Kubernetes Design.
+* Added Platform Observability Design.
+* Added High Availability and Disaster Recovery.
+* Added DevSecOps Pipeline Design.
+
+#### UX, Security & Operations
+
+* Added User Experience Design Standards.
+* Added Security Design Standards.
+* Added Operational Readiness Design.
+* Added Solution Design Reference Guide.
+
+---
+
+### Repository Improvements
+
+* Strengthened repository-wide design principles emphasizing architectural quality over document quantity.
+* Expanded AI-native enterprise architecture guidance.
+* Added implementation-oriented design standards while maintaining technology neutrality.
+* Improved cross-document consistency and architectural navigation.
+* Extended enterprise governance into implementation-ready solution design.
+
+---
+
+### Repository Status
+
+* Milestone M5 completed.
+* Solution Design documentation finalized.
+* Repository ready for Release **v0.5.0-m5**.
+* Repository prepared for transition to Milestone M6.
+
+---
+
+## Previous Releases
+
+| Version       | Milestone               | Status       |
+| ------------- | ----------------------- | ------------ |
+| v0.1.0-m1     | Blueprint               | Released     |
+| v0.2.0-m2     | Enterprise Architecture | Released     |
+| v0.3.0-m3     | Architecture Governance | Released     |
+| v0.4.0-m4     | Solution Architecture   | Released     |
+| **v0.5.0-m5** | **Solution Design**     | **Released** |
+
+
+
 ## [v0.4.0-m4] - 2026-07-13
 
 ### Added
