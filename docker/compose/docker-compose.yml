@@ -33,6 +33,17 @@ services:
     ports:
       - "8001:8001"
 
+  agent-runtime:
+    build:
+      context: ../../services/agent-runtime
+
+    ports:
+      - "8002:8002"
+
+    depends_on:
+      - planner-runtime
+      - postgres
+      - redis
 
   redis:
     image: redis:7-alpine
