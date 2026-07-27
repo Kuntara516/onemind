@@ -14,7 +14,7 @@ class DemoAgent(BaseAgent):
     async def execute(
         self,
         task: dict,
-        context=None
+        context
     ) -> dict:
 
         message = task.get(

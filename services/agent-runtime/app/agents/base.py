@@ -4,6 +4,9 @@ from abc import ABC, abstractmethod
 class BaseAgent(ABC):
     """
     Base interface for all OneMind agents.
+
+    Every agent must implement execute()
+    with Runtime Context injection.
     """
 
     name: str = "unknown-agent"
@@ -11,14 +14,24 @@ class BaseAgent(ABC):
 
 
     @abstractmethod
-    async def execute(self,task: dict, context=None) -> dict:
+    async def execute(
+        self,
+        task: dict,
+        context
+    ) -> dict:
         """
         Execute agent task.
 
         Args:
-            task: Agent input payload
+            task:
+                Agent input payload
+
+            context:
+                Runtime execution context
+                provided by AgentRuntime
 
         Returns:
             Agent execution result
         """
+
         pass

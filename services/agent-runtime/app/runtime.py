@@ -7,6 +7,12 @@ from app.agents.context import AgentContext
 class AgentRuntime:
     """
     Core execution engine for OneMind agents.
+
+    Responsible for:
+    - Agent resolution
+    - Context creation
+    - Execution lifecycle
+    - Result metadata collection
     """
 
     async def execute(
@@ -35,7 +41,6 @@ class AgentRuntime:
         # -------------------------------------------------
 
         context = AgentContext(
-            agent_id=agent_name,
             request_id=str(uuid4())
         )
 
@@ -55,6 +60,10 @@ class AgentRuntime:
                 "status": "completed",
                 "agent": agent_name,
                 "request_id": context.request_id,
+                "context": {
+                    "session_id": context.session_id,
+                    "user_id": context.user_id
+                },
                 "result": result
             }
 
