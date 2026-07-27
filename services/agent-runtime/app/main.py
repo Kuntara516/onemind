@@ -3,13 +3,31 @@ from fastapi import FastAPI
 from app.models import AgentTask
 from app.runtime import runtime
 from app.registry import registry
+from app.agents.demo_agent import DemoAgent
 
+
+# ---------------------------------------------------------
+# Agent Registration
+# ---------------------------------------------------------
+# Register built-in agents when Agent Runtime starts
+# ---------------------------------------------------------
+
+registry.register(DemoAgent())
+
+
+# ---------------------------------------------------------
+# FastAPI Application
+# ---------------------------------------------------------
 
 app = FastAPI(
     title="OneMind Agent Runtime",
     version="0.1.0"
 )
 
+
+# ---------------------------------------------------------
+# Health Check
+# ---------------------------------------------------------
 
 @app.get("/health")
 async def health():
@@ -20,6 +38,10 @@ async def health():
     }
 
 
+# ---------------------------------------------------------
+# Agent Discovery
+# ---------------------------------------------------------
+
 @app.get("/agents")
 async def agents():
 
@@ -27,6 +49,10 @@ async def agents():
         "agents": registry.list_agents()
     }
 
+
+# ---------------------------------------------------------
+# Agent Execution
+# ---------------------------------------------------------
 
 @app.post("/execute")
 async def execute(task: AgentTask):

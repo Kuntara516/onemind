@@ -1,25 +1,72 @@
+from uuid import uuid4
+
 from app.registry import registry
+from app.agents.context import AgentContext
 
 
 class AgentRuntime:
+    """
+    Core execution engine for OneMind agents.
+    """
 
-    async def execute(self, agent_name: str, task: dict):
+    async def execute(
+        self,
+        agent_name: str,
+        task: dict
+    ):
+
+        # -------------------------------------------------
+        # Resolve Agent
+        # -------------------------------------------------
 
         agent = registry.get(agent_name)
 
         if not agent:
             return {
                 "status": "error",
-                "message": f"Agent {agent_name} not found"
+                "message": (
+                    f"Agent {agent_name} not found"
+                )
             }
 
-        result = await agent.execute(task)
 
-        return {
-            "status": "completed",
-            "agent": agent_name,
-            "result": result
-        }
+        # -------------------------------------------------
+        # Create Execution Context
+        # -------------------------------------------------
+
+        context = AgentContext(
+            agent_id=agent_name,
+            request_id=str(uuid4())
+        )
+
+
+        # -------------------------------------------------
+        # Execute Agent
+        # -------------------------------------------------
+
+        try:
+
+            result = await agent.execute(
+                task,
+                context
+            )
+
+            return {
+                "status": "completed",
+                "agent": agent_name,
+                "request_id": context.request_id,
+                "result": result
+            }
+
+
+        except Exception as error:
+
+            return {
+                "status": "failed",
+                "agent": agent_name,
+                "request_id": context.request_id,
+                "error": str(error)
+            }
 
 
 runtime = AgentRuntime()
