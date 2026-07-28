@@ -3,6 +3,7 @@ from typing import Any
 from .capabilities import (
     BaseCapability,
     CapabilityRegistry,
+    EchoCapability,
 )
 
 
@@ -17,6 +18,19 @@ class CapabilityManager:
         registry: CapabilityRegistry | None = None,
     ):
         self.registry = registry or CapabilityRegistry()
+
+        self.register_default_capabilities()
+
+    def register_default_capabilities(
+        self,
+    ) -> None:
+        """
+        Register built-in OneMind capabilities.
+        """
+
+        self.register(
+            EchoCapability()
+        )
 
     def register(
         self,
