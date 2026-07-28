@@ -4,6 +4,7 @@ from app.models import AgentTask
 from app.runtime import runtime
 from app.registry import registry
 from app.agents.demo_agent import DemoAgent
+from app.capability_manager import CapabilityManager
 
 
 # ---------------------------------------------------------
@@ -13,6 +14,7 @@ from app.agents.demo_agent import DemoAgent
 # ---------------------------------------------------------
 
 registry.register(DemoAgent())
+capability_manager = CapabilityManager()
 
 
 # ---------------------------------------------------------
@@ -59,5 +61,6 @@ async def execute(task: AgentTask):
 
     return await runtime.execute(
         task.agent,
+        capability_manager,
         task.task
     )
