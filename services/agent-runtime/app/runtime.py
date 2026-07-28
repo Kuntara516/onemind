@@ -18,6 +18,7 @@ class AgentRuntime:
     async def execute(
         self,
         agent_name: str,
+        capability_manager,
         task: dict
     ):
 
@@ -53,7 +54,8 @@ class AgentRuntime:
 
             result = await agent.execute(
                 task,
-                context
+                context,
+                capability_manager
             )
 
             return {

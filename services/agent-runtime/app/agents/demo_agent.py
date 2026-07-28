@@ -10,11 +10,11 @@ class DemoAgent(BaseAgent):
         "for OneMind runtime"
     )
 
-
     async def execute(
         self,
         task: dict,
-        context
+        context,
+        capabilities
     ) -> dict:
 
         message = task.get(
@@ -22,13 +22,17 @@ class DemoAgent(BaseAgent):
             ""
         )
 
+        tool_result = await capabilities.execute(
+            "echo",
+            text=message
+        )
+
         return {
-            "message": (
-                f"OneMind received: {message}"
-            ),
+            "message": message,
             "request_id": (
                 context.request_id
                 if context
                 else None
-            )
+            ),
+            "tool_result": tool_result
         }

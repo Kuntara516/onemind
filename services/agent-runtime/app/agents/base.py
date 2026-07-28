@@ -6,7 +6,7 @@ class BaseAgent(ABC):
     Base interface for all OneMind agents.
 
     Every agent must implement execute()
-    with Runtime Context injection.
+    with Runtime Context and Capability injection.
     """
 
     name: str = "unknown-agent"
@@ -17,7 +17,8 @@ class BaseAgent(ABC):
     async def execute(
         self,
         task: dict,
-        context
+        context,
+        capabilities
     ) -> dict:
         """
         Execute agent task.
