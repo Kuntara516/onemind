@@ -1,20 +1,51 @@
 from fastapi import FastAPI
 
-from app.models import AgentTask
-from app.runtime import runtime
+from app.tasks import AgentTask
+
 from app.registry import registry
 from app.agents.demo_agent import DemoAgent
+
 from app.capability_manager import CapabilityManager
 
+from app.runtime import ExecutionService
+from app.runtime.invoker import AgentInvoker
+
+from app.executor import Executor
+from app.manager import TaskManager
+
 
 # ---------------------------------------------------------
-# Agent Registration
-# ---------------------------------------------------------
-# Register built-in agents when Agent Runtime starts
+# Dependency Initialization
 # ---------------------------------------------------------
 
-registry.register(DemoAgent())
+# Register built-in agents
+registry.register(
+    DemoAgent()
+)
+
+
+# Capability Layer
 capability_manager = CapabilityManager()
+
+
+# Agent Invocation Layer
+agent_invoker = AgentInvoker(
+    registry,
+    capability_manager,
+)
+
+
+# Execution Pipeline
+executor = Executor()
+
+task_manager = TaskManager(
+    executor
+)
+
+execution_service = ExecutionService(
+    task_manager,
+    agent_invoker,
+)
 
 
 # ---------------------------------------------------------
@@ -23,7 +54,7 @@ capability_manager = CapabilityManager()
 
 app = FastAPI(
     title="OneMind Agent Runtime",
-    version="0.1.0"
+    version="0.2.0",
 )
 
 
@@ -36,7 +67,7 @@ async def health():
 
     return {
         "status": "ok",
-        "service": "agent-runtime"
+        "service": "agent-runtime",
     }
 
 
@@ -48,7 +79,7 @@ async def health():
 async def agents():
 
     return {
-        "agents": registry.list_agents()
+        "agents": registry.list_agents(),
     }
 
 
@@ -57,10 +88,12 @@ async def agents():
 # ---------------------------------------------------------
 
 @app.post("/execute")
-async def execute(task: AgentTask):
+async def execute(
+    task: AgentTask,
+):
 
-    return await runtime.execute(
-        task.agent,
-        capability_manager,
-        task.task
+    result = await execution_service.execute(
+        task
     )
+
+    return result

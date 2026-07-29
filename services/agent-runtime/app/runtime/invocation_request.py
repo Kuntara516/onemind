@@ -7,16 +7,6 @@ from app.agents.context import AgentContext
 class AgentInvocationRequest(BaseModel):
     """
     Request contract for invoking an Agent.
-
-    Flow:
-
-    Executor
-        |
-        v
-    AgentInvoker
-        |
-        v
-    Agent Runtime
     """
 
     agent_id: str = Field(
@@ -33,3 +23,6 @@ class AgentInvocationRequest(BaseModel):
         ...,
         description="Runtime execution context",
     )
+
+    class Config:
+        arbitrary_types_allowed = True
