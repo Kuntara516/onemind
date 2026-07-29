@@ -13,6 +13,7 @@ class TaskManager:
     - track task status
 
     TaskManager does not:
+    - execute agents directly
     - execute capabilities directly
     - contain business logic
     """
@@ -69,14 +70,20 @@ class TaskManager:
     async def execute_task(
         self,
         task: AgentTask,
-        capability_manager,
+        agent_invoker,
+        context,
     ) -> AgentTask:
         """
         Execute task through Executor.
 
         Executor owns:
-        - capability resolution
-        - capability execution
+        - execution coordination
+        - agent invocation
+
+        AgentInvoker owns:
+        - agent resolution
+        - agent execution
+        - capability injection
 
         TaskManager owns:
         - coordination
@@ -85,7 +92,8 @@ class TaskManager:
 
         result = await self.executor.execute(
             task,
-            capability_manager,
+            agent_invoker,
+            context,
         )
 
         self.tasks[task.task_id] = result
@@ -97,7 +105,7 @@ class TaskManager:
         task_id: str,
     ) -> TaskStatus:
         """
-        Return current task lifecycle state.
+        Return current lifecycle state.
         """
 
         task = self.tasks.get(task_id)

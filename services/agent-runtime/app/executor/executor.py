@@ -6,14 +6,18 @@ from app.tasks import (
     TaskLifecycle,
 )
 
+from app.runtime.invocation_request import (
+    AgentInvocationRequest,
+)
+
 
 class Executor:
     """
-    Executes AgentTask through available capabilities.
+    Executes AgentTask through Agent Runtime.
 
     Executor responsibilities:
     - lifecycle coordination
-    - capability invocation
+    - agent invocation
     - result handling
     - execution metadata update
     """
@@ -21,7 +25,8 @@ class Executor:
     async def execute(
         self,
         task: AgentTask,
-        capability_manager,
+        agent_invoker,
+        context,
     ) -> AgentTask:
         """
         Execute AgentTask.
@@ -45,15 +50,22 @@ class Executor:
                 TaskStatus.RUNNING,
             )
 
-            capability = capability_manager.resolve(
-                task.required_capabilities
+            invocation_request = AgentInvocationRequest(
+                agent_id=task.agent_id,
+                task=task,
+                context=context,
             )
 
-            result = await capability.execute(
-                **task.input
+            invocation_result = await agent_invoker.invoke(
+                invocation_request
             )
 
-            task.result = result
+            if not invocation_result.success:
+                raise Exception(
+                    invocation_result.error
+                )
+
+            task.result = invocation_result.output
 
             task.status = TaskLifecycle.transition(
                 task.status,

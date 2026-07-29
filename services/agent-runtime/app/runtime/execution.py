@@ -1,5 +1,6 @@
 from app.manager import TaskManager
 from app.tasks import AgentTask
+from app.agents.context import AgentContext
 
 
 class ExecutionService:
@@ -10,10 +11,11 @@ class ExecutionService:
     def __init__(
         self,
         task_manager: TaskManager,
-        capability_manager,
+        agent_invoker,
     ):
         self.task_manager = task_manager
-        self.capability_manager = capability_manager
+        self.agent_invoker = agent_invoker
+
 
     async def execute(
         self,
@@ -22,6 +24,14 @@ class ExecutionService:
         """
         Execute AgentTask through execution pipeline.
         """
+
+        context = AgentContext(
+            request_id=task.task_id,
+            metadata={
+                "task_id": task.task_id,
+                "agent_id": task.agent_id,
+            },
+        )
 
         self.task_manager.create_task(
             task
@@ -33,7 +43,8 @@ class ExecutionService:
 
         result = await self.task_manager.execute_task(
             task,
-            self.capability_manager,
+            self.agent_invoker,
+            context,
         )
 
         return result
