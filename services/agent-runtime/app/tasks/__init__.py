@@ -1,6 +1,6 @@
 from .models import AgentTask
 from .status import TaskStatus
-from app.tasks.lifecycle import (
+from .lifecycle import (
     TaskLifecycle,
     InvalidTaskTransition,
 )
@@ -8,4 +8,6 @@ from app.tasks.lifecycle import (
 __all__ = [
     "AgentTask",
     "TaskStatus",
+    "TaskLifecycle",
+    "InvalidTaskTransition",
 ]
