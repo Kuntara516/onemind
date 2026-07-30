@@ -10,8 +10,10 @@ from app.runtime.invocation_request import (
     AgentInvocationRequest,
 )
 
-from app.runtime.tracing import ExecutionTrace
-
+from app.runtime.tracing import (
+    ExecutionTrace,
+    EventType,
+)
 
 class Executor:
     """
@@ -55,7 +57,8 @@ class Executor:
             )
 
             trace.add_event(
-                "agent.started"
+                EventType.AGENT_STARTED,
+                agent=task.agent_id,
             )
 
             invocation_request = AgentInvocationRequest(
@@ -76,7 +79,8 @@ class Executor:
             task.result = invocation_result.output
 
             trace.add_event(
-                "agent.finished"
+                EventType.AGENT_FINISHED,
+                agent=task.agent_id,
             )
 
             task.status = TaskLifecycle.transition(
@@ -97,7 +101,8 @@ class Executor:
             }
 
             trace.add_event(
-                "error"
+                EventType.ERROR,
+                message=str(exc),
             )
 
             task.status = TaskLifecycle.transition(

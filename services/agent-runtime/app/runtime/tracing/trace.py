@@ -47,30 +47,30 @@ class ExecutionTrace(BaseModel):
         description="Ordered execution event history",
     )
 
-
     def add_event(
         self,
-        event_type: str,
+        event_type: EventType,
+        agent: str | None = None,
         message: str | None = None,
         metadata: dict | None = None,
     ):
         """
-        Create and append execution event.
+        Add execution event.
+
+        Trace owns event creation.
         """
 
         event = ExecutionEvent(
             event_id=str(uuid4()),
             request_id=self.request_id,
             task_id=self.task_id,
-            event_type=EventType(event_type),
+            event_type=event_type,
+            agent=agent,
             message=message,
             metadata=metadata or {},
         )
 
-        self.events.append(
-            event
-        )
-
+        self.events.append(event)
 
     def finish(self):
         """
@@ -80,7 +80,6 @@ class ExecutionTrace(BaseModel):
         self.finished_at = datetime.now(
             timezone.utc
         )
-
 
     def to_dict(self):
         """

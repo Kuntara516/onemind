@@ -72,6 +72,7 @@ class TaskManager:
         task: AgentTask,
         agent_invoker,
         context,
+        trace,
     ) -> AgentTask:
         """
         Execute task through Executor.
@@ -94,6 +95,7 @@ class TaskManager:
             task,
             agent_invoker,
             context,
+            trace,
         )
 
         self.tasks[task.task_id] = result
