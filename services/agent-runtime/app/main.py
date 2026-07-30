@@ -104,3 +104,17 @@ async def execute(
     )
 
     return result
+
+# ---------------------------------------------------------
+# Execution Trace Debug
+# ---------------------------------------------------------
+
+@app.get("/traces")
+async def traces():
+
+    return {
+        "traces": [
+            trace.to_dict()
+            for trace in trace_recorder.list()
+        ]
+    }
