@@ -9,6 +9,7 @@ from app.capability_manager import CapabilityManager
 
 from app.runtime import ExecutionService
 from app.runtime.invoker import AgentInvoker
+from app.runtime.tracing import InMemoryTraceRecorder
 
 from app.executor import Executor
 from app.manager import TaskManager
@@ -35,6 +36,10 @@ agent_invoker = AgentInvoker(
 )
 
 
+# Execution Trace Layer
+trace_recorder = InMemoryTraceRecorder()
+
+
 # Execution Pipeline
 executor = Executor()
 
@@ -42,9 +47,11 @@ task_manager = TaskManager(
     executor
 )
 
+
 execution_service = ExecutionService(
     task_manager,
     agent_invoker,
+    trace_recorder,
 )
 
 
