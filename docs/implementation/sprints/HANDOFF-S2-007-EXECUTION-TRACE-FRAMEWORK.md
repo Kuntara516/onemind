@@ -2,7 +2,7 @@
 
 **Document ID:** OM-HANDOFF-S2-007
 **Version:** 1.0.0
-**Status:** Draft
+**Status:** Frozen
 **Milestone:** M6 Platform Engineering
 **Sprint:** Sprint 2 — Agent Invocation
 **Task:** S2-007 — Execution Trace Framework
