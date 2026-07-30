@@ -10,6 +10,8 @@ from app.runtime.invocation_request import (
     AgentInvocationRequest,
 )
 
+from app.runtime.tracing import ExecutionTrace
+
 
 class Executor:
     """
@@ -20,6 +22,7 @@ class Executor:
     - agent invocation
     - result handling
     - execution metadata update
+    - execution trace event recording
     """
 
     async def execute(
@@ -27,6 +30,7 @@ class Executor:
         task: AgentTask,
         agent_invoker,
         context,
+        trace: ExecutionTrace,
     ) -> AgentTask:
         """
         Execute AgentTask.
@@ -50,6 +54,10 @@ class Executor:
                 TaskStatus.RUNNING,
             )
 
+            trace.add_event(
+                "agent.started"
+            )
+
             invocation_request = AgentInvocationRequest(
                 agent_id=task.agent_id,
                 task=task,
@@ -67,6 +75,10 @@ class Executor:
 
             task.result = invocation_result.output
 
+            trace.add_event(
+                "agent.finished"
+            )
+
             task.status = TaskLifecycle.transition(
                 task.status,
                 TaskStatus.COMPLETED,
@@ -83,6 +95,10 @@ class Executor:
                 "error": "execution_failed",
                 "message": str(exc),
             }
+
+            trace.add_event(
+                "error"
+            )
 
             task.status = TaskLifecycle.transition(
                 task.status,
