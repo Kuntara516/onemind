@@ -1,8 +1,12 @@
 from datetime import datetime, timezone
+from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
-from .event import ExecutionEvent
+from .event import (
+    ExecutionEvent,
+    EventType,
+)
 
 
 class ExecutionTrace(BaseModel):
@@ -14,7 +18,7 @@ class ExecutionTrace(BaseModel):
     """
 
     trace_id: str = Field(
-        ...,
+        default_factory=lambda: str(uuid4()),
         description="Unique identifier of execution trace",
     )
 
@@ -43,29 +47,44 @@ class ExecutionTrace(BaseModel):
         description="Ordered execution event history",
     )
 
+
     def add_event(
         self,
-        event: ExecutionEvent,
+        event_type: str,
+        message: str | None = None,
+        metadata: dict | None = None,
     ):
         """
-        Add an execution event to trace history.
+        Create and append execution event.
         """
 
-        self.events.append(event)
+        event = ExecutionEvent(
+            event_id=str(uuid4()),
+            request_id=self.request_id,
+            task_id=self.task_id,
+            event_type=EventType(event_type),
+            message=message,
+            metadata=metadata or {},
+        )
+
+        self.events.append(
+            event
+        )
+
 
     def finish(self):
         """
         Mark execution trace as completed.
         """
 
-        self.finished_at = datetime.now(timezone.utc)
+        self.finished_at = datetime.now(
+            timezone.utc
+        )
+
 
     def to_dict(self):
         """
         Serialize execution trace.
-
-        Returns:
-            dict representation of trace.
         """
 
         return self.model_dump()
