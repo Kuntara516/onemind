@@ -5,27 +5,81 @@ from app.manager import TaskManager
 from app.executor import Executor
 from app.tasks import AgentTask, TaskStatus
 
+from app.runtime.invocation_result import (
+    AgentInvocationResult,
+)
 
-class FakeCapability:
-    async def execute(self, **kwargs):
-        return {
-            "echo": kwargs.get("text")
-        }
-
-
-class FakeCapabilityManager:
-    def resolve(self, required_capabilities):
-        return FakeCapability()
+from app.runtime.tracing import (
+    ExecutionTrace,
+)
 
 
-class FailingCapability:
-    async def execute(self, **kwargs):
-        raise Exception("capability failed")
+class FakeAgentInvoker:
+    """
+    Fake AgentInvoker following Sprint 2 architecture.
+
+    Executor
+        |
+        v
+    AgentInvoker.invoke()
+        |
+        v
+    AgentInvocationResult
+    """
+
+    async def invoke(
+        self,
+        request,
+    ):
+
+        return AgentInvocationResult(
+            success=True,
+            output={
+                "echo": request.task.input.get("text")
+            },
+            metadata={
+                "agent_id": request.agent_id,
+                "task_id": request.task.task_id,
+            },
+        )
 
 
-class FailingCapabilityManager:
-    def resolve(self, required_capabilities):
-        return FailingCapability()
+class FailingAgentInvoker:
+    """
+    Fake failing AgentInvoker.
+    """
+
+    async def invoke(
+        self,
+        request,
+    ):
+
+        return AgentInvocationResult(
+            success=False,
+            error="capability failed",
+            metadata={
+                "agent_id": request.agent_id,
+                "task_id": request.task.task_id,
+            },
+        )
+
+
+class FakeTraceRecorder:
+    """
+    Fake trace recorder for execution pipeline test.
+    """
+
+    def __init__(self):
+        self.traces = []
+
+
+    def record(
+        self,
+        trace: ExecutionTrace,
+    ):
+        self.traces.append(
+            trace
+        )
 
 
 @pytest.mark.anyio
@@ -47,9 +101,12 @@ async def test_execution_pipeline_success():
         executor=Executor()
     )
 
+    trace_recorder = FakeTraceRecorder()
+
     execution_service = ExecutionService(
         task_manager=task_manager,
-        capability_manager=FakeCapabilityManager(),
+        agent_invoker=FakeAgentInvoker(),
+        trace_recorder=trace_recorder,
     )
 
     result = await execution_service.execute(
@@ -61,6 +118,8 @@ async def test_execution_pipeline_success():
     assert result.result == {
         "echo": "hello pipeline"
     }
+
+    assert len(trace_recorder.traces) == 1
 
 
 @pytest.mark.anyio
@@ -80,9 +139,12 @@ async def test_execution_pipeline_failure():
         executor=Executor()
     )
 
+    trace_recorder = FakeTraceRecorder()
+
     execution_service = ExecutionService(
         task_manager=task_manager,
-        capability_manager=FailingCapabilityManager(),
+        agent_invoker=FailingAgentInvoker(),
+        trace_recorder=trace_recorder,
     )
 
     result = await execution_service.execute(
@@ -92,6 +154,8 @@ async def test_execution_pipeline_failure():
     assert result.status == TaskStatus.FAILED
 
     assert result.result["error"] == "execution_failed"
+
+    assert len(trace_recorder.traces) == 1
 
 
 @pytest.mark.anyio
@@ -113,9 +177,12 @@ async def test_execution_pipeline_lifecycle_transition():
         executor=Executor()
     )
 
+    trace_recorder = FakeTraceRecorder()
+
     execution_service = ExecutionService(
         task_manager=task_manager,
-        capability_manager=FakeCapabilityManager(),
+        agent_invoker=FakeAgentInvoker(),
+        trace_recorder=trace_recorder,
     )
 
     result = await execution_service.execute(
@@ -125,3 +192,5 @@ async def test_execution_pipeline_lifecycle_transition():
     assert result.status == TaskStatus.COMPLETED
 
     assert result.completed_at is not None
+
+    assert len(trace_recorder.traces) == 1
