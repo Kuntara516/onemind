@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.tasks.models import AgentTask
 from app.agents.context import AgentContext
@@ -24,5 +24,6 @@ class AgentInvocationRequest(BaseModel):
         description="Runtime execution context",
     )
 
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+    )
