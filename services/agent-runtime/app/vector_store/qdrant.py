@@ -1,5 +1,9 @@
 from qdrant_client import QdrantClient
-from qdrant_client.models import PointStruct
+from qdrant_client.http.models import (
+    Distance,
+    PointStruct,
+    VectorParams,
+)
 
 from .base import VectorStore
 from .models import VectorRecord
@@ -22,7 +26,33 @@ class QdrantVectorStore(VectorStore):
             port=port,
         )
 
+    def _ensure_collection(
+        self,
+        collection: str,
+        vector_size: int,
+    ) -> None:
+        collections = self._client.get_collections()
+
+        exists = any(
+            item.name == collection
+            for item in collections.collections
+        )
+
+        if not exists:
+            self._client.create_collection(
+                collection_name=collection,
+                vectors_config=VectorParams(
+                    size=vector_size,
+                    distance=Distance.COSINE,
+                ),
+            )
+
     def add(self, record: VectorRecord) -> None:
+        self._ensure_collection(
+            collection=record.collection,
+            vector_size=len(record.vector),
+        )
+
         self._client.upsert(
             collection_name=record.collection,
             points=[
@@ -37,10 +67,16 @@ class QdrantVectorStore(VectorStore):
             ],
         )
 
-    def get(self, record_id: str) -> VectorRecord | None:
+    def get(
+        self,
+        record_id: str,
+    ) -> VectorRecord | None:
         return None
 
-    def delete(self, record_id: str) -> None:
+    def delete(
+        self,
+        record_id: str,
+    ) -> None:
         return None
 
     def search(
