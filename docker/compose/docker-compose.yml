@@ -44,6 +44,7 @@ services:
       - planner-runtime
       - postgres
       - redis
+      - qdrant
 
   redis:
     image: redis:7-alpine
@@ -56,6 +57,16 @@ services:
 
     command: redis-server --appendonly yes
 
+  qdrant:
+    image: qdrant/qdrant:latest
+
+    ports:
+      - "6333:6333"
+
+    volumes:
+      - qdrant-data:/qdrant/storage
+
 volumes:
   postgres-data:
   redis-data:
+  qdrant-data:
