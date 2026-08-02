@@ -3,6 +3,7 @@ from qdrant_client.http.models import (
     Distance,
     PointStruct,
     VectorParams,
+    PointIdsList,
 )
 
 from .base import VectorStore
@@ -20,11 +21,14 @@ class QdrantVectorStore(VectorStore):
         self,
         host: str = "localhost",
         port: int = 6333,
+        collection: str = "onemind_memory",
     ) -> None:
         self._client = QdrantClient(
             host=host,
             port=port,
         )
+
+        self._collection = collection
 
     def _ensure_collection(
         self,
@@ -47,14 +51,19 @@ class QdrantVectorStore(VectorStore):
                 ),
             )
 
-    def add(self, record: VectorRecord) -> None:
+    def add(
+        self,
+        record: VectorRecord,
+    ) -> None:
+        collection = record.collection or self._collection
+
         self._ensure_collection(
-            collection=record.collection,
+            collection=collection,
             vector_size=len(record.vector),
         )
 
         self._client.upsert(
-            collection_name=record.collection,
+            collection_name=collection,
             points=[
                 PointStruct(
                     id=record.id,
@@ -71,17 +80,79 @@ class QdrantVectorStore(VectorStore):
         self,
         record_id: str,
     ) -> VectorRecord | None:
-        return None
+        points = self._client.retrieve(
+            collection_name=self._collection,
+            ids=[record_id],
+            with_payload=True,
+            with_vectors=True,
+        )
+
+        if not points:
+            return None
+
+        point = points[0]
+
+        payload = point.payload or {}
+
+        return VectorRecord(
+            id=str(point.id),
+            collection=self._collection,
+            vector=point.vector or [],
+            payload=payload.get(
+                "payload",
+                {},
+            ),
+            metadata=payload.get(
+                "metadata",
+                {},
+            ),
+        )
 
     def delete(
         self,
         record_id: str,
     ) -> None:
-        return None
+        self._client.delete(
+            collection_name=self._collection,
+            points_selector=PointIdsList(
+                points=[
+                    record_id,
+                ],
+            ),
+        )
 
     def search(
         self,
         vector: list[float],
         limit: int = 5,
     ) -> list[VectorRecord]:
-        return []
+        result = self._client.query_points(
+            collection_name=self._collection,
+            query=vector,
+            limit=limit,
+            with_payload=True,
+            with_vectors=True,
+        )
+
+        records: list[VectorRecord] = []
+
+        for point in result.points:
+            payload = point.payload or {}
+
+            records.append(
+                VectorRecord(
+                    id=str(point.id),
+                    collection=self._collection,
+                    vector=point.vector or [],
+                    payload=payload.get(
+                        "payload",
+                        {},
+                    ),
+                    metadata=payload.get(
+                        "metadata",
+                        {},
+                    ),
+                )
+            )
+
+        return records
