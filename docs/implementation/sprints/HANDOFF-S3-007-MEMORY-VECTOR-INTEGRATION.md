@@ -260,3 +260,35 @@ S3-007 is complete when:
 ---
 
 *End of Handoff*
+## Known Warnings
+
+### protobuf / qdrant-client Deprecation Warning
+During `pytest` execution, the following warnings are observed:
+
+```text
+DeprecationWarning: Type google._upb._message.MessageMapContainer uses PyType_Spec with a metaclass that has custom tp_new.
+DeprecationWarning: Type google._upb._message.ScalarMapContainer uses PyType_Spec with a metaclass that has custom tp_new.
+Source:
+
+qdrant-client dependency stack
+
+protobuf runtime
+
+Impact:
+
+No impact to OneMind implementation
+
+No failed tests
+
+No runtime issue observed
+
+Current Decision:
+
+Ignore during Sprint 3
+
+Do not suppress warnings
+
+Do not pin/downgrade protobuf dependency
+
+Future Action: Review during dependency upgrade / platform hardening cycle.
+
