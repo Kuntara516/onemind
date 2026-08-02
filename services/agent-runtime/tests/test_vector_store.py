@@ -1,3 +1,6 @@
+import pytest
+
+from app.vector_store.factory import VectorStoreFactory
 from app.vector_store.memory import InMemoryVectorStore
 from app.vector_store.models import VectorRecord
 
@@ -48,3 +51,14 @@ def test_search_returns_records():
 
     assert len(results) == 1
     assert results[0].id == "vec-001"
+
+
+def test_factory_creates_memory_store():
+    store = VectorStoreFactory.create()
+
+    assert isinstance(store, InMemoryVectorStore)
+
+
+def test_factory_rejects_unknown_backend():
+    with pytest.raises(ValueError):
+        VectorStoreFactory.create("unknown")
