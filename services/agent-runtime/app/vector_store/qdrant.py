@@ -1,3 +1,5 @@
+from uuid import NAMESPACE_URL, uuid5
+
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import (
     Distance,
@@ -26,9 +28,25 @@ class QdrantVectorStore(VectorStore):
         self._client = QdrantClient(
             host=host,
             port=port,
+            check_compatibility=False,
         )
 
         self._collection = collection
+
+    def _point_id(
+        self,
+        record_id: str,
+    ) -> str:
+        """
+        Convert OneMind record id into Qdrant compatible UUID.
+        """
+
+        return str(
+            uuid5(
+                NAMESPACE_URL,
+                f"onemind:{record_id}",
+            )
+        )
 
     def _ensure_collection(
         self,
@@ -66,9 +84,10 @@ class QdrantVectorStore(VectorStore):
             collection_name=collection,
             points=[
                 PointStruct(
-                    id=record.id,
+                    id=self._point_id(record.id),
                     vector=record.vector,
                     payload={
+                        "_record_id": record.id,
                         "payload": record.payload,
                         "metadata": record.metadata,
                     },
@@ -82,7 +101,9 @@ class QdrantVectorStore(VectorStore):
     ) -> VectorRecord | None:
         points = self._client.retrieve(
             collection_name=self._collection,
-            ids=[record_id],
+            ids=[
+                self._point_id(record_id),
+            ],
             with_payload=True,
             with_vectors=True,
         )
@@ -95,7 +116,10 @@ class QdrantVectorStore(VectorStore):
         payload = point.payload or {}
 
         return VectorRecord(
-            id=str(point.id),
+            id=payload.get(
+                "_record_id",
+                record_id,
+            ),
             collection=self._collection,
             vector=point.vector or [],
             payload=payload.get(
@@ -116,7 +140,7 @@ class QdrantVectorStore(VectorStore):
             collection_name=self._collection,
             points_selector=PointIdsList(
                 points=[
-                    record_id,
+                    self._point_id(record_id),
                 ],
             ),
         )
@@ -141,7 +165,10 @@ class QdrantVectorStore(VectorStore):
 
             records.append(
                 VectorRecord(
-                    id=str(point.id),
+                    id=payload.get(
+                        "_record_id",
+                        str(point.id),
+                    ),
                     collection=self._collection,
                     vector=point.vector or [],
                     payload=payload.get(
