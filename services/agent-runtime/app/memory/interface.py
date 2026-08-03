@@ -5,6 +5,9 @@ Defines the abstraction boundary between
 Agent Runtime and Memory Providers.
 
 Sprint 3 - Memory & Knowledge Foundation
+
+ADR-001:
+Async-First Runtime Architecture
 """
 
 from abc import ABC, abstractmethod
@@ -24,7 +27,10 @@ class MemoryInterface(ABC):
     """
 
     @abstractmethod
-    def store(self, memory: MemoryRecord) -> MemoryRecord:
+    async def store(
+        self,
+        memory: MemoryRecord,
+    ) -> MemoryRecord:
         """
         Store a memory record.
 
@@ -38,7 +44,10 @@ class MemoryInterface(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def retrieve(self, query: MemoryQuery) -> MemoryResult:
+    async def retrieve(
+        self,
+        query: MemoryQuery,
+    ) -> MemoryResult:
         """
         Retrieve memories based on query.
 
@@ -52,7 +61,10 @@ class MemoryInterface(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def delete(self, memory_id: str) -> bool:
+    async def delete(
+        self,
+        memory_id: str,
+    ) -> bool:
         """
         Delete a memory record.
 

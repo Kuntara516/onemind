@@ -5,6 +5,9 @@ Provides application-level operations for
 the OneMind Memory Foundation.
 
 Sprint 3 - Memory & Knowledge Foundation
+
+ADR-001:
+Async-First Runtime Architecture
 """
 
 from .interface import MemoryInterface
@@ -36,7 +39,10 @@ class MemoryService:
 
         self._provider = provider
 
-    def store(self, memory: MemoryRecord) -> MemoryRecord:
+    async def store(
+        self,
+        memory: MemoryRecord,
+    ) -> MemoryRecord:
         """
         Store a memory record.
 
@@ -51,9 +57,12 @@ class MemoryService:
         if not memory.content:
             raise ValueError("Memory content cannot be empty")
 
-        return self._provider.store(memory)
+        return await self._provider.store(memory)
 
-    def retrieve(self, query: MemoryQuery) -> MemoryResult:
+    async def retrieve(
+        self,
+        query: MemoryQuery,
+    ) -> MemoryResult:
         """
         Retrieve memories.
 
@@ -68,9 +77,12 @@ class MemoryService:
         if not query.query:
             raise ValueError("Memory query cannot be empty")
 
-        return self._provider.retrieve(query)
+        return await self._provider.retrieve(query)
 
-    def delete(self, memory_id: str) -> bool:
+    async def delete(
+        self,
+        memory_id: str,
+    ) -> bool:
         """
         Delete a memory record.
 
@@ -85,4 +97,4 @@ class MemoryService:
         if not memory_id:
             raise ValueError("Memory id cannot be empty")
 
-        return self._provider.delete(memory_id)
+        return await self._provider.delete(memory_id)

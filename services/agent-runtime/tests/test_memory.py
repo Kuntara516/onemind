@@ -4,14 +4,20 @@ OneMind Memory Foundation Tests.
 Validates the Memory Foundation implementation.
 
 Sprint 3 - Memory & Knowledge Foundation
+
+ADR-001:
+Async-First Runtime Architecture
 """
+
+import pytest
 
 from app.memory.models import MemoryQuery, MemoryRecord
 from app.memory.provider import InMemoryProvider
 from app.memory.service import MemoryService
 
 
-def test_memory_record_creation():
+@pytest.mark.anyio
+async def test_memory_record_creation():
     """
     Validate MemoryRecord creation.
     """
@@ -27,7 +33,8 @@ def test_memory_record_creation():
     assert memory.updated_at is not None
 
 
-def test_memory_service_store():
+@pytest.mark.anyio
+async def test_memory_service_store():
     """
     Validate storing memory through service layer.
     """
@@ -39,13 +46,14 @@ def test_memory_service_store():
         content="OneMind uses interface driven architecture."
     )
 
-    stored = service.store(memory)
+    stored = await service.store(memory)
 
     assert stored.id == memory.id
     assert stored.content == memory.content
 
 
-def test_memory_service_retrieve():
+@pytest.mark.anyio
+async def test_memory_service_retrieve():
     """
     Validate memory retrieval.
     """
@@ -53,13 +61,13 @@ def test_memory_service_retrieve():
     provider = InMemoryProvider()
     service = MemoryService(provider)
 
-    service.store(
+    await service.store(
         MemoryRecord(
             content="Memory layer supports future RAG integration."
         )
     )
 
-    result = service.retrieve(
+    result = await service.retrieve(
         MemoryQuery(
             query="RAG"
         )
@@ -70,7 +78,8 @@ def test_memory_service_retrieve():
     assert "RAG" in result.records[0].content
 
 
-def test_memory_service_delete():
+@pytest.mark.anyio
+async def test_memory_service_delete():
     """
     Validate memory deletion.
     """
@@ -78,17 +87,17 @@ def test_memory_service_delete():
     provider = InMemoryProvider()
     service = MemoryService(provider)
 
-    memory = service.store(
+    memory = await service.store(
         MemoryRecord(
             content="Temporary memory entry."
         )
     )
 
-    deleted = service.delete(memory.id)
+    deleted = await service.delete(memory.id)
 
     assert deleted is True
 
-    result = service.retrieve(
+    result = await service.retrieve(
         MemoryQuery(
             query="Temporary"
         )
@@ -97,7 +106,8 @@ def test_memory_service_delete():
     assert result.count == 0
 
 
-def test_memory_provider_contract():
+@pytest.mark.anyio
+async def test_memory_provider_contract():
     """
     Validate provider implements MemoryInterface behavior.
     """
@@ -108,9 +118,9 @@ def test_memory_provider_contract():
         content="Provider contract validation."
     )
 
-    stored = provider.store(memory)
+    stored = await provider.store(memory)
 
-    result = provider.retrieve(
+    result = await provider.retrieve(
         MemoryQuery(
             query="Provider"
         )
