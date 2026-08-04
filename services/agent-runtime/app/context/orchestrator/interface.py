@@ -1,5 +1,5 @@
 """
-Context Orchestrator interface.
+Context Orchestrator Interface.
 
 Defines the contract between Context Orchestration
 service and concrete orchestration implementations.
@@ -9,15 +9,18 @@ Sprint 4 - Context Intelligence & Retrieval Pipeline
 
 from abc import ABC, abstractmethod
 
-from .models import OrchestrationRequest, OrchestrationResult
+from .models import (
+    OrchestrationRequest,
+    OrchestrationResult,
+)
 
 
-class ContextOrchestrator(ABC):
+class ContextOrchestratorInterface(ABC):
     """
     Abstract contract for context orchestration.
 
     Implementations are responsible for coordinating
-    context construction workflows.
+    context intelligence workflows.
 
     Future orchestration capabilities:
 
@@ -26,6 +29,7 @@ class ContextOrchestrator(ABC):
     - context prioritization
     - context compression
     - token budget management
+    - execution tracing
     """
 
     @abstractmethod
@@ -41,7 +45,8 @@ class ContextOrchestrator(ABC):
                 Context orchestration request.
 
         Returns:
-            OrchestrationResult containing assembled context.
+            OrchestrationResult containing
+            assembled context.
         """
 
         raise NotImplementedError
