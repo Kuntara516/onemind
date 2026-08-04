@@ -11,6 +11,7 @@ import pytest
 from app.context.compression.models import (
     CompressionCandidate,
     CompressionRequest,
+    CompressionResult,
 )
 from app.context.compression.service import (
     ContextCompressionService,
@@ -20,7 +21,7 @@ from app.context.compression.strategies.default import (
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_default_compression_respects_token_budget():
     """
     Verify compression keeps candidates within token budget.
@@ -51,7 +52,7 @@ async def test_default_compression_respects_token_budget():
     assert result.removed_candidates == 1
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_default_compression_keeps_high_priority_candidates():
     """
     Verify higher priority candidates are selected first.
@@ -83,7 +84,7 @@ async def test_default_compression_keeps_high_priority_candidates():
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_compression_service_delegates_to_strategy():
     """
     Verify compression service delegates to strategy.
@@ -96,13 +97,9 @@ async def test_compression_service_delegates_to_strategy():
         async def compress(self, request):
             self.called = True
 
-            from app.context.compression.models import (
-                CompressionResult,
-            )
-
             return CompressionResult(
                 metadata={
-                    "strategy": "mock"
+                    "strategy": "mock",
                 }
             )
 
@@ -120,7 +117,7 @@ async def test_compression_service_delegates_to_strategy():
     assert result.metadata["strategy"] == "mock"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_compression_empty_candidates():
     """
     Verify empty candidate list returns valid result.
@@ -129,7 +126,7 @@ async def test_compression_empty_candidates():
     service = ContextCompressionService()
 
     request = CompressionRequest(
-        candidates=[]
+        candidates=[],
     )
 
     result = await service.compress(request)
