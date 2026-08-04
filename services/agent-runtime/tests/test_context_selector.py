@@ -5,9 +5,18 @@ Sprint:
     S4-007-003 Context Selector
 """
 
-from app.context_runtime.models import ContextCandidate
-from app.context_runtime.policies import SelectionPolicy
-from app.context_runtime.selector import DefaultContextSelector
+from app.context_runtime.models import (
+    ContextCandidate,
+    ContextLifecycle,
+)
+
+from app.context_runtime.policies import (
+    SelectionPolicy,
+)
+
+from app.context_runtime.selector import (
+    DefaultContextSelector,
+)
 
 
 def create_candidate(
@@ -20,11 +29,13 @@ def create_candidate(
     """
 
     return ContextCandidate(
-        id=candidate_id,
+        context_id=candidate_id,
         content=content,
         score=score,
-        source="test",
-        metadata={},
+        lifecycle=ContextLifecycle.ACTIVE,
+        metadata={
+            "source": "test"
+        },
     )
 
 
@@ -36,9 +47,21 @@ def test_select_top_k():
     selector = DefaultContextSelector()
 
     candidates = [
-        create_candidate("a", "context a", 0.95),
-        create_candidate("b", "context b", 0.85),
-        create_candidate("c", "context c", 0.75),
+        create_candidate(
+            "a",
+            "context a",
+            0.95,
+        ),
+        create_candidate(
+            "b",
+            "context b",
+            0.85,
+        ),
+        create_candidate(
+            "c",
+            "context c",
+            0.75,
+        ),
     ]
 
     policy = SelectionPolicy(
@@ -53,20 +76,37 @@ def test_select_top_k():
     )
 
     assert len(result.items) == 2
-    assert result.items[0].id == "a"
-    assert result.items[1].id == "b"
+
+    assert (
+        result.items[0].context_id
+        == "a"
+    )
+
+    assert (
+        result.items[1].context_id
+        == "b"
+    )
 
 
 def test_filter_min_score():
     """
-    Selector should remove candidates below threshold.
+    Selector should remove candidates
+    below score threshold.
     """
 
     selector = DefaultContextSelector()
 
     candidates = [
-        create_candidate("high", "high score", 0.9),
-        create_candidate("low", "low score", 0.2),
+        create_candidate(
+            "high",
+            "high score",
+            0.9,
+        ),
+        create_candidate(
+            "low",
+            "low score",
+            0.2,
+        ),
     ]
 
     policy = SelectionPolicy(
@@ -81,12 +121,17 @@ def test_filter_min_score():
     )
 
     assert len(result.items) == 1
-    assert result.items[0].id == "high"
+
+    assert (
+        result.items[0].context_id
+        == "high"
+    )
 
 
 def test_select_by_token_budget():
     """
-    Selector should stop when token budget is exceeded.
+    Selector should stop when token budget
+    is exceeded.
     """
 
     selector = DefaultContextSelector()
@@ -116,21 +161,37 @@ def test_select_by_token_budget():
     )
 
     assert len(result.items) == 1
-    assert result.items[0].id == "a"
+
+    assert (
+        result.items[0].context_id
+        == "a"
+    )
 
 
 def test_preserve_rank_order():
-
     """
-    Selector should preserve rank order from Ranker.
+    Selector should preserve ranking order
+    from Context Ranker.
     """
 
     selector = DefaultContextSelector()
 
     candidates = [
-        create_candidate("first", "first", 0.95),
-        create_candidate("second", "second", 0.80),
-        create_candidate("third", "third", 0.70),
+        create_candidate(
+            "first",
+            "first",
+            0.95,
+        ),
+        create_candidate(
+            "second",
+            "second",
+            0.80,
+        ),
+        create_candidate(
+            "third",
+            "third",
+            0.70,
+        ),
     ]
 
     policy = SelectionPolicy(
@@ -145,7 +206,7 @@ def test_preserve_rank_order():
     )
 
     ids = [
-        item.id
+        item.context_id
         for item in result.items
     ]
 
@@ -157,7 +218,6 @@ def test_preserve_rank_order():
 
 
 def test_return_selection_metadata():
-
     """
     Selector should expose selection metadata.
     """
@@ -183,6 +243,17 @@ def test_return_selection_metadata():
         policy,
     )
 
-    assert result.metadata["selector"] == "default"
-    assert result.total_score == 0.9
-    assert result.total_tokens > 0
+    assert (
+        result.metadata["selector"]
+        == "default"
+    )
+
+    assert (
+        result.total_score
+        == 0.9
+    )
+
+    assert (
+        result.total_tokens
+        > 0
+    )
