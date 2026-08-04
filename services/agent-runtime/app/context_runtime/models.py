@@ -1,162 +1,156 @@
-from __future__ import annotations
+"""
+Context Runtime Models
 
-from datetime import datetime, timezone
+Defines runtime context state models used by:
+- context lifecycle management
+- context budget management
+- context retrieval pipeline
+
+S4-007-001 Context Runtime Foundation
+"""
+
+from enum import Enum
 from typing import Optional
 
 from pydantic import BaseModel, Field
 
 
-class ContextLifecycle:
+class ContextLifecycle(str, Enum):
     """
-    Context runtime lifecycle states.
-
-    State transition:
-
-        CREATED
-            |
-            v
-        ACTIVE
-            |
-            v
-        STALE
-            |
-            v
-        ARCHIVED
-            |
-            v
-        REMOVED
+    Context lifecycle states.
     """
 
     CREATED = "created"
-
     ACTIVE = "active"
-
     STALE = "stale"
-
     ARCHIVED = "archived"
-
     REMOVED = "removed"
 
 
 class ContextAllocation(BaseModel):
     """
-    Token allocation across context sources.
+    Token allocation breakdown for context budget.
+
+    Represents reserved token capacity for each context source.
     """
 
-    system: int = Field(
-        default=0,
-        ge=0,
-    )
+    system: int = 0
+    memory: int = 0
+    knowledge: int = 0
+    conversation: int = 0
 
-    memory: int = Field(
-        default=0,
-        ge=0,
-    )
+    @property
+    def total(self) -> int:
+        """
+        Calculate total allocated tokens.
+        """
 
-    knowledge: int = Field(
-        default=0,
-        ge=0,
-    )
-
-    conversation: int = Field(
-        default=0,
-        ge=0,
-    )
-
-    reserved: int = Field(
-        default=0,
-        ge=0,
-    )
+        return (
+            self.system
+            + self.memory
+            + self.knowledge
+            + self.conversation
+        )
 
 
 class ContextBudget(BaseModel):
     """
-    Runtime context token budget.
+    Context token budget model.
     """
 
-    max_tokens: int = Field(
-        ...,
-        gt=0,
-    )
-
-    used_tokens: int = Field(
-        default=0,
-        ge=0,
-    )
+    max_tokens: int
 
     allocation: ContextAllocation
 
+    consumed_tokens: int = 0
+    reserved_tokens: int = 0
+
+    @property
+    def used_tokens(self) -> int:
+        """
+        Backward compatibility alias.
+
+        Existing BudgetManager expects:
+
+            budget.used_tokens
+
+        Context Runtime model uses:
+
+            budget.consumed_tokens
+
+        consumed_tokens remains the source of truth.
+        """
+
+        return self.consumed_tokens
+
+    @used_tokens.setter
+    def used_tokens(self, value: int) -> None:
+        """
+        Backward compatibility setter.
+
+        Supports existing mutation logic:
+
+            budget.used_tokens += tokens
+
+        while maintaining:
+
+            consumed_tokens
+
+        as the canonical value.
+        """
+
+        self.consumed_tokens = value
+
+    @property
     def remaining_tokens(self) -> int:
         """
-        Return remaining available tokens.
+        Calculate remaining available tokens.
         """
 
         return (
             self.max_tokens
-            - self.used_tokens
+            - self.consumed_tokens
+            - self.reserved_tokens
         )
-
-
-class ContextRefreshPolicy(BaseModel):
-    """
-    Context refresh configuration.
-    """
-
-    enabled: bool = Field(
-        default=True,
-    )
-
-    relevance_threshold: float = Field(
-        default=0.6,
-        ge=0.0,
-        le=1.0,
-    )
-
-    refresh_interval_seconds: int = Field(
-        default=300,
-        gt=0,
-    )
 
 
 class ContextRuntimeState(BaseModel):
     """
-    Runtime state of an active context.
-
-    Represents the lifecycle-managed
-    execution context container.
+    Runtime state container for a context session.
     """
 
     context_id: str
 
-    lifecycle: str = Field(
-        default=ContextLifecycle.CREATED,
+    lifecycle: ContextLifecycle = (
+        ContextLifecycle.CREATED
     )
 
-    created_at: datetime = Field(
-        default_factory=lambda:
-            datetime.now(timezone.utc),
+    budget: Optional[ContextBudget] = None
+
+    metadata: dict = Field(
+        default_factory=dict
     )
 
-    updated_at: datetime = Field(
-        default_factory=lambda:
-            datetime.now(timezone.utc),
-    )
+    created_at: Optional[str] = None
 
-    budget: ContextBudget
+    updated_at: Optional[str] = None
 
-    refresh_policy: ContextRefreshPolicy = Field(
-        default_factory=ContextRefreshPolicy,
-    )
-
-    metadata: Optional[dict] = Field(
-        default=None,
-    )
-
-    def touch(self) -> None:
+    def is_active(self) -> bool:
         """
-        Update last modified timestamp.
+        Check whether context is active.
         """
 
-        self.updated_at = datetime.now(
-            timezone.utc
+        return (
+            self.lifecycle
+            == ContextLifecycle.ACTIVE
+        )
+
+    def is_removed(self) -> bool:
+        """
+        Check whether context is removed.
+        """
+
+        return (
+            self.lifecycle
+            == ContextLifecycle.REMOVED
         )
