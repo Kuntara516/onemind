@@ -1,16 +1,14 @@
 """
-Context Runtime Models
+Context runtime data models.
 
-Defines runtime context state models used by:
-- context lifecycle management
-- context budget management
-- context retrieval pipeline
-
-S4-007-001 Context Runtime Foundation
+Defines runtime context state,
+budget allocation, lifecycle state,
+and retrieval candidate contracts.
 """
 
+from __future__ import annotations
+
 from enum import Enum
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -21,41 +19,36 @@ class ContextLifecycle(str, Enum):
     """
 
     CREATED = "created"
+
     ACTIVE = "active"
-    STALE = "stale"
+
+    STALE = " stale"
+
     ARCHIVED = "archived"
+
     REMOVED = "removed"
 
 
 class ContextAllocation(BaseModel):
     """
-    Token allocation breakdown for context budget.
+    Token allocation distribution.
 
-    Represents reserved token capacity for each context source.
+    Defines how context budget is divided
+    across context sources.
     """
 
     system: int = 0
+
     memory: int = 0
+
     knowledge: int = 0
+
     conversation: int = 0
-
-    @property
-    def total(self) -> int:
-        """
-        Calculate total allocated tokens.
-        """
-
-        return (
-            self.system
-            + self.memory
-            + self.knowledge
-            + self.conversation
-        )
 
 
 class ContextBudget(BaseModel):
     """
-    Context token budget model.
+    Context token budget state.
     """
 
     max_tokens: int
@@ -63,22 +56,16 @@ class ContextBudget(BaseModel):
     allocation: ContextAllocation
 
     consumed_tokens: int = 0
+
     reserved_tokens: int = 0
 
     @property
     def used_tokens(self) -> int:
         """
-        Backward compatibility alias.
+        Backward compatible alias.
 
-        Existing BudgetManager expects:
-
-            budget.used_tokens
-
-        Context Runtime model uses:
-
-            budget.consumed_tokens
-
-        consumed_tokens remains the source of truth.
+        Budget manager uses used_tokens
+        while storage keeps consumed_tokens.
         """
 
         return self.consumed_tokens
@@ -86,17 +73,7 @@ class ContextBudget(BaseModel):
     @used_tokens.setter
     def used_tokens(self, value: int) -> None:
         """
-        Backward compatibility setter.
-
-        Supports existing mutation logic:
-
-            budget.used_tokens += tokens
-
-        while maintaining:
-
-            consumed_tokens
-
-        as the canonical value.
+        Allow budget manager mutation.
         """
 
         self.consumed_tokens = value
@@ -104,7 +81,7 @@ class ContextBudget(BaseModel):
     @property
     def remaining_tokens(self) -> int:
         """
-        Calculate remaining available tokens.
+        Remaining available tokens.
         """
 
         return (
@@ -116,7 +93,10 @@ class ContextBudget(BaseModel):
 
 class ContextRuntimeState(BaseModel):
     """
-    Runtime state container for a context session.
+    Runtime context state.
+
+    Represents active context lifecycle
+    and budget state.
     """
 
     context_id: str
@@ -125,32 +105,32 @@ class ContextRuntimeState(BaseModel):
         ContextLifecycle.CREATED
     )
 
-    budget: Optional[ContextBudget] = None
+    budget: ContextBudget
 
-    metadata: dict = Field(
+    metadata: dict[str, str] = Field(
         default_factory=dict
     )
 
-    created_at: Optional[str] = None
 
-    updated_at: Optional[str] = None
+class ContextCandidate(BaseModel):
+    """
+    Retrieved context candidate.
 
-    def is_active(self) -> bool:
-        """
-        Check whether context is active.
-        """
+    Represents a context item returned
+    from the context retrieval layer.
 
-        return (
-            self.lifecycle
-            == ContextLifecycle.ACTIVE
-        )
+    This model becomes the contract between
+    retrieval pipeline and context intelligence.
+    """
 
-    def is_removed(self) -> bool:
-        """
-        Check whether context is removed.
-        """
+    context_id: str
 
-        return (
-            self.lifecycle
-            == ContextLifecycle.REMOVED
-        )
+    score: float = 0.0
+
+    lifecycle: ContextLifecycle
+
+    budget: ContextBudget | None = None
+
+    metadata: dict[str, str] = Field(
+        default_factory=dict
+    )
