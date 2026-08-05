@@ -7,10 +7,6 @@ within the Context Intelligence Layer.
 Sprint 4 - Context Intelligence & Retrieval Pipeline
 """
 
-from app.context.orchestrator.interface import (
-    ContextOrchestratorInterface,
-)
-
 from app.context.orchestrator.models import (
     OrchestrationRequest,
     OrchestrationResult,
@@ -21,7 +17,25 @@ class ContextOrchestrationService:
     """
     Application service for Context Orchestration.
 
+    Supports:
+
+    1. Delegation mode
+
+        ContextOrchestrationService(
+            orchestrator
+        )
+
+
+    2. Pipeline mode
+
+        ContextOrchestrationService(
+            retrieval_service=...,
+            ranking_service=...,
+        )
+
+
     Responsibilities:
+
     - validate orchestration requests
     - coordinate retrieval pipeline
     - delegate ranking
@@ -31,49 +45,67 @@ class ContextOrchestrationService:
 
     def __init__(
         self,
-        retrieval_service,
-        ranking_service,
+        orchestrator=None,
+        retrieval_service=None,
+        ranking_service=None,
     ) -> None:
         """
         Initialize Context Orchestration Service.
 
         Args:
+
+            orchestrator:
+                Optional orchestration strategy.
+
             retrieval_service:
-                Retrieval service implementation.
+                Context retrieval implementation.
 
             ranking_service:
-                Context ranking service implementation.
+                Context ranking implementation.
         """
 
-        self._retrieval_service = retrieval_service
-        self._ranking_service = ranking_service
+        self._orchestrator = orchestrator
+
+        self._retrieval_service = (
+            retrieval_service
+        )
+
+        self._ranking_service = (
+            ranking_service
+        )
 
     async def orchestrate(
         self,
         request: OrchestrationRequest,
     ) -> OrchestrationResult:
         """
-        Execute context orchestration pipeline.
+        Execute context orchestration.
 
-        Pipeline:
+        Supports:
 
-        ContextRequest
-            |
-            v
-        Retrieval Service
-            |
-            v
-        Ranking Service
-            |
-            v
-        OrchestrationResult
+        Strategy delegation:
 
-        Args:
-            request:
-                Context orchestration request.
+            Request
+                |
+                v
+            Orchestrator
+                |
+                v
+            Result
 
-        Returns:
-            Orchestration result.
+
+        Pipeline execution:
+
+            Request
+                |
+                v
+            Retrieval Service
+                |
+                v
+            Ranking Service
+                |
+                v
+            Result
         """
 
         if request is None:
@@ -81,12 +113,35 @@ class ContextOrchestrationService:
                 "Orchestration request cannot be None"
             )
 
-        retrieval_result = await self._retrieval_service.retrieve(
-            request.context,
+        #
+        # Strategy delegation mode
+        #
+        if self._orchestrator is not None:
+            return await self._orchestrator.orchestrate(
+                request
+            )
+
+        #
+        # Retrieval + Ranking pipeline mode
+        #
+        if (
+            self._retrieval_service is None
+            or self._ranking_service is None
+        ):
+            raise RuntimeError(
+                "Context orchestration services are not configured"
+            )
+
+        retrieval_result = (
+            await self._retrieval_service.retrieve(
+                request.context,
+            )
         )
 
-        ranking_result = await self._ranking_service.rank(
-            retrieval_result,
+        ranking_result = (
+            await self._ranking_service.rank(
+                retrieval_result,
+            )
         )
 
         return OrchestrationResult(

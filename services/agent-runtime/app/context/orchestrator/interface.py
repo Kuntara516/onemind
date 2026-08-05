@@ -50,3 +50,16 @@ class ContextOrchestratorInterface(ABC):
         """
 
         raise NotImplementedError
+
+
+# ---------------------------------------------------------------------
+# Backward compatible contract name.
+#
+# Existing orchestrator implementations and tests
+# expect ContextOrchestrator.
+#
+# Keep ContextOrchestratorInterface as the canonical
+# interface name while exposing the historical name.
+# ---------------------------------------------------------------------
+
+ContextOrchestrator = ContextOrchestratorInterface

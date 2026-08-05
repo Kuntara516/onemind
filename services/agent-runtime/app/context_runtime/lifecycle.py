@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from app.context_runtime.interface import ContextLifecycleManager
+from app.context_runtime.interface import (
+    ContextLifecycleManager,
+)
+
 from app.context_runtime.models import (
     ContextLifecycle,
     ContextRuntimeState,
@@ -23,7 +26,15 @@ class DefaultContextLifecycleManager(
     ) -> ContextRuntimeState:
         """
         CREATED -> ACTIVE
+
+        Idempotent:
+        ACTIVE -> ACTIVE
         """
+
+        if context.lifecycle == (
+            ContextLifecycle.ACTIVE
+        ):
+            return context
 
         if context.lifecycle != (
             ContextLifecycle.CREATED
@@ -37,7 +48,6 @@ class DefaultContextLifecycleManager(
         )
 
         return context
-
 
     def mark_stale(
         self,
@@ -60,7 +70,6 @@ class DefaultContextLifecycleManager(
 
         return context
 
-
     def archive(
         self,
         context: ContextRuntimeState,
@@ -82,7 +91,6 @@ class DefaultContextLifecycleManager(
         )
 
         return context
-
 
     def remove(
         self,

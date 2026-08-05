@@ -3,11 +3,14 @@ from __future__ import annotations
 from app.context_runtime.budget import (
     DefaultContextBudgetManager,
 )
+
 from app.context_runtime.lifecycle import (
     DefaultContextLifecycleManager,
 )
+
 from app.context_runtime.models import (
     ContextBudget,
+    ContextLifecycle,
     ContextRuntimeState,
 )
 
@@ -39,11 +42,15 @@ class ContextRuntimeCoordinator:
     ) -> ContextRuntimeState:
         """
         Create runtime context.
+
+        Newly created contexts always begin
+        in CREATED lifecycle state.
         """
 
         self._context = ContextRuntimeState(
             context_id=context_id,
             budget=budget,
+            lifecycle=ContextLifecycle.CREATED,
         )
 
         self._budget_manager.allocate(
