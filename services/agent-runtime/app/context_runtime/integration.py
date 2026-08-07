@@ -3,9 +3,13 @@ Context Runtime Integration
 
 Sprint:
     S4-008 Context Runtime Integration
+    S4-009 Context Runtime Observability
 
 Bridges Context Intelligence pipeline
 with Agent Runtime execution context.
+
+Adds runtime tracing and observability
+without changing existing pipeline contracts.
 """
 
 from __future__ import annotations
@@ -20,6 +24,11 @@ from .assembler import ContextAssembler
 
 from .policies import SelectionPolicy
 from .assembly_models import AssembledContext
+
+from .observability import (
+    ContextObservabilityService,
+    ContextRuntimeEvent,
+)
 
 
 class ContextRuntimeIntegration:
@@ -40,6 +49,15 @@ class ContextRuntimeIntegration:
         Select
             |
         Assemble
+
+    Observability:
+
+        Trace
+          |
+          +-- Retrieval events
+          +-- Ranking events
+          +-- Selection events
+          +-- Assembly events
     """
 
     def __init__(
@@ -49,6 +67,7 @@ class ContextRuntimeIntegration:
         selector: ContextSelector,
         assembler: ContextAssembler,
         selection_policy: SelectionPolicy | None = None,
+        observability: ContextObservabilityService | None = None,
     ):
         self.retriever = retriever
         self.ranker = ranker
@@ -60,6 +79,10 @@ class ContextRuntimeIntegration:
             or SelectionPolicy()
         )
 
+        self.observability = (
+            observability
+            or ContextObservabilityService()
+        )
 
     def build_context(
         self,
@@ -74,52 +97,171 @@ class ContextRuntimeIntegration:
             AssembledContext
         """
 
-        query = self._build_query(
-            task
+        trace = self.observability.start_trace(
+            task_id=str(
+                getattr(task, "id", None)
+            ),
         )
 
-        candidates = self.retriever.retrieve(
-            query=query,
-        )
+        try:
+            query = self._build_query(
+                task
+            )
 
-        ranked = self.ranker.rank(
-            candidates=candidates,
-            query=query,
-        )
+            #
+            # Retrieval
+            #
+            self.observability.record_event(
+                trace.trace_id,
+                ContextRuntimeEvent.RETRIEVAL_STARTED,
+            )
 
-        selected = self.selector.select(
-            candidates=ranked,
-            policy=self.selection_policy,
-        )
+            candidates = self.retriever.retrieve(
+                query=query,
+            )
 
-        assembled = self.assembler.assemble(
-            selected_context=selected,
-            user_input=query,
-        )
+            self.observability.record_event(
+                trace.trace_id,
+                ContextRuntimeEvent.RETRIEVAL_COMPLETED,
+                metadata={
+                    "retrieved_items": len(
+                        candidates
+                    ),
+                },
+            )
 
-        agent_context.set(
-            "assembled_context",
-            assembled,
-        )
+            #
+            # Ranking
+            #
+            self.observability.record_event(
+                trace.trace_id,
+                ContextRuntimeEvent.RANKING_STARTED,
+            )
 
-        agent_context.set(
-            "context_runtime",
-            {
-                "enabled": True,
-                "pipeline": [
-                    "retrieval",
-                    "ranking",
-                    "selection",
-                    "assembly",
-                ],
-                "selected_items": len(
+            ranked = self.ranker.rank(
+                candidates=candidates,
+                query=query,
+            )
+
+            self.observability.record_event(
+                trace.trace_id,
+                ContextRuntimeEvent.RANKING_COMPLETED,
+                metadata={
+                    "ranked_items": len(
+                        ranked
+                    ),
+                },
+            )
+
+            #
+            # Selection
+            #
+            self.observability.record_event(
+                trace.trace_id,
+                ContextRuntimeEvent.SELECTION_STARTED,
+            )
+
+            selected = self.selector.select(
+                candidates=ranked,
+                policy=self.selection_policy,
+            )
+
+            self.observability.record_event(
+                trace.trace_id,
+                ContextRuntimeEvent.SELECTION_COMPLETED,
+                metadata={
+                    "selected_items": len(
+                        selected.items
+                    ),
+                },
+            )
+
+            #
+            # Assembly
+            #
+            self.observability.record_event(
+                trace.trace_id,
+                ContextRuntimeEvent.ASSEMBLY_STARTED,
+            )
+
+            assembled = self.assembler.assemble(
+                selected_context=selected,
+                user_input=query,
+            )
+
+            self.observability.record_event(
+                trace.trace_id,
+                ContextRuntimeEvent.ASSEMBLY_COMPLETED,
+                metadata={
+                    "sections": assembled.section_count,
+                },
+            )
+
+            #
+            # Metrics
+            #
+            self.observability.update_metrics(
+                trace.trace_id,
+                retrieved_items=len(
+                    candidates
+                ),
+                ranked_items=len(
+                    ranked
+                ),
+                selected_items=len(
                     selected.items
                 ),
-            },
-        )
+                compressed_tokens=(
+                    getattr(
+                        assembled,
+                        "total_tokens",
+                        0,
+                    )
+                ),
+            )
 
-        return assembled
+            summary = self.observability.finish_trace(
+                trace.trace_id,
+            )
 
+            #
+            # Preserve existing context contract
+            #
+            agent_context.set(
+                "assembled_context",
+                assembled,
+            )
+
+            agent_context.set(
+                "context_runtime",
+                {
+                    "enabled": True,
+                    "pipeline": [
+                        "retrieval",
+                        "ranking",
+                        "selection",
+                        "assembly",
+                    ],
+                    "selected_items": len(
+                        selected.items
+                    ),
+                },
+            )
+
+            agent_context.set(
+                "context_runtime_observability",
+                summary.model_dump(),
+            )
+
+            return assembled
+
+        except Exception:
+            self.observability.finish_trace(
+                trace.trace_id,
+                success=False,
+            )
+
+            raise
 
     @staticmethod
     def _build_query(
