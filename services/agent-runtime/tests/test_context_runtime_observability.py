@@ -3,6 +3,7 @@ Context Runtime Observability Tests
 
 Sprint:
     S4-009 Context Runtime Observability
+    S4-010-005 Observability Validation & Runtime Metrics
 
 Coverage:
 
@@ -10,7 +11,9 @@ Coverage:
 - Event tracking
 - Stage timing
 - Metrics collection
-- Integration observability propagation
+- Runtime metrics validation
+- Runtime adapter integration
+
 """
 
 from __future__ import annotations
@@ -20,10 +23,12 @@ from time import sleep
 from app.context_runtime.observability import (
     ContextObservabilityService,
     ContextRuntimeEvent,
+    ContextRuntimeObservabilityRuntime,
 )
 
 from app.context_runtime.observability.metrics import (
     calculate_pipeline_health,
+    calculate_selection_ratio,
 )
 
 
@@ -160,3 +165,80 @@ def test_observability_summary_contains_metrics():
     assert summary.metrics.ranked_items == 8
     assert summary.metrics.selected_items == 5
     assert summary.metrics.event_count >= 2
+
+
+def test_selection_ratio_calculation():
+    """
+    Verify context selection ratio metric.
+    """
+
+    ratio = calculate_selection_ratio(
+        retrieved_items=10,
+        selected_items=5,
+    )
+
+    assert ratio == 0.5
+
+
+def test_compression_metrics_collection():
+    """
+    Verify compression metrics are stored in snapshot.
+    """
+
+    service = ContextObservabilityService()
+
+    trace = service.start_trace()
+
+    service.update_metrics(
+        trace.trace_id,
+        original_tokens=1000,
+        compressed_tokens=400,
+    )
+
+    summary = service.finish_trace(
+        trace.trace_id
+    )
+
+    assert (
+        summary.metrics.original_tokens
+        == 1000
+    )
+
+    assert (
+        summary.metrics.compressed_tokens
+        == 400
+    )
+
+    assert (
+        summary.metrics.compression_ratio
+        == 0.4
+    )
+
+    assert (
+        summary.metrics.token_reduction
+        == 600
+    )
+
+
+def test_runtime_observability_adapter_lifecycle():
+    """
+    Verify runtime adapter delegates lifecycle
+    through observability provider layer.
+    """
+
+    runtime = ContextRuntimeObservabilityRuntime()
+
+    trace = runtime.start_trace(
+        "execution-001",
+    )
+
+    assert trace is not None
+
+    runtime.record_event(
+        "execution-001",
+        ContextRuntimeEvent.CONTEXT_BUILD_STARTED,
+    )
+
+    runtime.finish_trace(
+        "execution-001",
+    )

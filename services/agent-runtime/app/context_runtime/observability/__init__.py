@@ -13,6 +13,8 @@ Provides:
             |
             +-- ContextObservabilityService
             |
+            +-- ContextRuntimeObservabilityRuntime
+            |
             +-- ObservabilityProviderManager
             |
             +-- OpenTelemetry Provider
@@ -21,6 +23,7 @@ Provides:
 Sprint:
     S4-009 Context Runtime Observability
     S4-010 Provider Integration Layer
+    S4-010-005 Observability Validation & Runtime Metrics
 
 Author:
     OneMind Platform
@@ -29,7 +32,9 @@ License:
     MIT
 """
 
-from .events import ContextRuntimeEvent
+from .events import (
+    ContextRuntimeEvent,
+)
 
 from .models import (
     ContextMetricsSnapshot,
@@ -45,6 +50,10 @@ from .interface import (
 
 from .service import (
     ContextObservabilityService,
+)
+
+from .runtime import (
+    ContextRuntimeObservabilityRuntime,
 )
 
 from .provider_manager import (
@@ -66,6 +75,7 @@ __all__ = [
     "ContextTraceEvent",
     "ContextObservabilityInterface",
     "ContextObservabilityService",
+    "ContextRuntimeObservabilityRuntime",
     "ObservabilityProviderManager",
     "OpenTelemetryObservabilityProvider",
     "OTEL_AVAILABLE",
