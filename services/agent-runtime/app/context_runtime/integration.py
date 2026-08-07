@@ -8,8 +8,10 @@ Sprint:
 Bridges Context Intelligence pipeline
 with Agent Runtime execution context.
 
-Adds runtime tracing and observability
-without changing existing pipeline contracts.
+Adds:
+    - Runtime tracing
+    - Stage timing
+    - Pipeline metrics
 """
 
 from __future__ import annotations
@@ -49,15 +51,8 @@ class ContextRuntimeIntegration:
         Select
             |
         Assemble
-
-    Observability:
-
-        Trace
-          |
-          +-- Retrieval events
-          +-- Ranking events
-          +-- Selection events
-          +-- Assembly events
+            |
+        Observability
     """
 
     def __init__(
@@ -93,15 +88,20 @@ class ContextRuntimeIntegration:
         Build runtime context package
         from AgentTask.
 
-        Returns:
-            AssembledContext
+        Includes observability tracing.
         """
 
         trace = self.observability.start_trace(
             task_id=str(
-                getattr(task, "id", None)
+                getattr(
+                    task,
+                    "id",
+                    "",
+                )
             ),
         )
+
+        trace_id = trace.trace_id
 
         try:
             query = self._build_query(
@@ -109,33 +109,46 @@ class ContextRuntimeIntegration:
             )
 
             #
-            # Retrieval
+            # Retrieval Stage
             #
             self.observability.record_event(
-                trace.trace_id,
+                trace_id,
                 ContextRuntimeEvent.RETRIEVAL_STARTED,
+            )
+
+            self.observability.start_stage(
+                trace_id,
+                "retrieval",
             )
 
             candidates = self.retriever.retrieve(
                 query=query,
             )
 
+            self.observability.complete_stage(
+                trace_id,
+                "retrieval",
+            )
+
             self.observability.record_event(
-                trace.trace_id,
+                trace_id,
                 ContextRuntimeEvent.RETRIEVAL_COMPLETED,
                 metadata={
-                    "retrieved_items": len(
-                        candidates
-                    ),
+                    "items": len(candidates),
                 },
             )
 
             #
-            # Ranking
+            # Ranking Stage
             #
             self.observability.record_event(
-                trace.trace_id,
+                trace_id,
                 ContextRuntimeEvent.RANKING_STARTED,
+            )
+
+            self.observability.start_stage(
+                trace_id,
+                "ranking",
             )
 
             ranked = self.ranker.rank(
@@ -143,22 +156,30 @@ class ContextRuntimeIntegration:
                 query=query,
             )
 
+            self.observability.complete_stage(
+                trace_id,
+                "ranking",
+            )
+
             self.observability.record_event(
-                trace.trace_id,
+                trace_id,
                 ContextRuntimeEvent.RANKING_COMPLETED,
                 metadata={
-                    "ranked_items": len(
-                        ranked
-                    ),
+                    "items": len(ranked),
                 },
             )
 
             #
-            # Selection
+            # Selection Stage
             #
             self.observability.record_event(
-                trace.trace_id,
+                trace_id,
                 ContextRuntimeEvent.SELECTION_STARTED,
+            )
+
+            self.observability.start_stage(
+                trace_id,
+                "selection",
             )
 
             selected = self.selector.select(
@@ -166,22 +187,32 @@ class ContextRuntimeIntegration:
                 policy=self.selection_policy,
             )
 
+            self.observability.complete_stage(
+                trace_id,
+                "selection",
+            )
+
             self.observability.record_event(
-                trace.trace_id,
+                trace_id,
                 ContextRuntimeEvent.SELECTION_COMPLETED,
                 metadata={
-                    "selected_items": len(
+                    "items": len(
                         selected.items
                     ),
                 },
             )
 
             #
-            # Assembly
+            # Assembly Stage
             #
             self.observability.record_event(
-                trace.trace_id,
+                trace_id,
                 ContextRuntimeEvent.ASSEMBLY_STARTED,
+            )
+
+            self.observability.start_stage(
+                trace_id,
+                "assembly",
             )
 
             assembled = self.assembler.assemble(
@@ -189,19 +220,21 @@ class ContextRuntimeIntegration:
                 user_input=query,
             )
 
+            self.observability.complete_stage(
+                trace_id,
+                "assembly",
+            )
+
             self.observability.record_event(
-                trace.trace_id,
+                trace_id,
                 ContextRuntimeEvent.ASSEMBLY_COMPLETED,
-                metadata={
-                    "sections": assembled.section_count,
-                },
             )
 
             #
             # Metrics
             #
             self.observability.update_metrics(
-                trace.trace_id,
+                trace_id,
                 retrieved_items=len(
                     candidates
                 ),
@@ -211,21 +244,23 @@ class ContextRuntimeIntegration:
                 selected_items=len(
                     selected.items
                 ),
-                compressed_tokens=(
-                    getattr(
+                original_tokens=(
+                    assembled.total_tokens
+                    if hasattr(
                         assembled,
                         "total_tokens",
-                        0,
                     )
+                    else 0
                 ),
             )
 
             summary = self.observability.finish_trace(
-                trace.trace_id,
+                trace_id,
+                success=True,
             )
 
             #
-            # Preserve existing context contract
+            # Agent Runtime Context
             #
             agent_context.set(
                 "assembled_context",
@@ -245,19 +280,23 @@ class ContextRuntimeIntegration:
                     "selected_items": len(
                         selected.items
                     ),
+                    "trace_id": str(
+                        trace_id
+                    ),
                 },
             )
 
             agent_context.set(
                 "context_runtime_observability",
-                summary.model_dump(),
+                summary,
             )
 
             return assembled
 
         except Exception:
+
             self.observability.finish_trace(
-                trace.trace_id,
+                trace_id,
                 success=False,
             )
 
@@ -277,7 +316,9 @@ class ContextRuntimeIntegration:
 
         if task.input:
             parts.append(
-                str(task.input)
+                str(
+                    task.input
+                )
             )
 
         return " ".join(parts)
