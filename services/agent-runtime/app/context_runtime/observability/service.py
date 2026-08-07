@@ -4,11 +4,11 @@ Context Runtime Observability Service
 Provides lifecycle management for Context Runtime traces,
 events, timings, and metrics collection.
 
-The service is intentionally implemented as an in-memory
-observability layer for S4-009 foundation.
+The service is implemented as an in-memory observability
+provider and conforms to the ContextObservabilityInterface.
 
 Sprint:
-    S4-009 Context Runtime Observability
+    S4-010-001 Observability Interface Foundation
 
 Author:
     OneMind Platform
@@ -23,6 +23,7 @@ from datetime import UTC, datetime
 from uuid import UUID
 
 from .events import ContextRuntimeEvent
+from .interface import ContextObservabilityInterface
 from .metrics import (
     calculate_latency,
     build_metrics_snapshot,
@@ -35,21 +36,35 @@ from .models import (
 )
 
 
-class ContextObservabilityService:
+class ContextObservabilityService(
+    ContextObservabilityInterface,
+):
     """
-    In-memory observability service for Context Runtime.
+    In-memory Context Runtime observability provider.
 
-    Responsibilities:
+    Implements:
+    
+    - Trace lifecycle
+    - Event recording
+    - Stage timing
+    - Metrics collection
+    - Runtime summaries
 
-    - Create execution traces
-    - Record lifecycle events
-    - Track stage timing
-    - Collect runtime metrics
-    - Produce execution summaries
+    This is the first provider implementation behind
+    the observability abstraction layer.
+
+    Future providers:
+
+    - OpenTelemetryProvider
+    - PrometheusMetricsProvider
+    - External telemetry backends
     """
 
     def __init__(self) -> None:
-        self._traces: dict[UUID, ContextRuntimeTrace] = {}
+        self._traces: dict[
+            UUID,
+            ContextRuntimeTrace,
+        ] = {}
 
     # ------------------------------------------------------------------
     # Trace lifecycle
@@ -74,7 +89,9 @@ class ContextObservabilityService:
             metadata=metadata or {},
         )
 
-        self._traces[trace.trace_id] = trace
+        self._traces[
+            trace.trace_id
+        ] = trace
 
         self.record_event(
             trace.trace_id,
@@ -91,7 +108,9 @@ class ContextObservabilityService:
         Retrieve trace by identifier.
         """
 
-        return self._traces.get(trace_id)
+        return self._traces.get(
+            trace_id
+        )
 
     def finish_trace(
         self,
@@ -103,9 +122,13 @@ class ContextObservabilityService:
         Complete trace execution and generate summary.
         """
 
-        trace = self._require_trace(trace_id)
+        trace = self._require_trace(
+            trace_id
+        )
 
-        completed_at = datetime.now(UTC)
+        completed_at = datetime.now(
+            UTC
+        )
 
         trace.completed_at = completed_at
         trace.success = success
@@ -124,7 +147,7 @@ class ContextObservabilityService:
 
         total_latency = calculate_latency(
             trace.started_at,
-            trace.completed_at,
+            completed_at,
         )
 
         return ContextRuntimeSummary(
@@ -135,7 +158,10 @@ class ContextObservabilityService:
             success=success,
             started_at=trace.started_at,
             completed_at=completed_at,
-            total_latency_ms=total_latency or 0.0,
+            total_latency_ms=(
+                total_latency
+                or 0.0
+            ),
             metrics=trace.metrics,
             stage_timings=trace.stage_timings,
             event_count=len(
@@ -161,14 +187,18 @@ class ContextObservabilityService:
         Append an event to a trace.
         """
 
-        trace = self._require_trace(trace_id)
+        trace = self._require_trace(
+            trace_id
+        )
 
         trace_event = ContextTraceEvent(
             event=event.value,
             metadata=metadata or {},
         )
 
-        trace.events.append(trace_event)
+        trace.events.append(
+            trace_event
+        )
 
         trace.metrics.event_count = len(
             trace.events
@@ -186,17 +216,23 @@ class ContextObservabilityService:
         stage: str,
     ) -> ContextStageTiming:
         """
-        Start timing for a pipeline stage.
+        Start timing for pipeline stage.
         """
 
-        trace = self._require_trace(trace_id)
+        trace = self._require_trace(
+            trace_id
+        )
 
         timing = ContextStageTiming(
             stage=stage,
-            started_at=datetime.now(UTC),
+            started_at=datetime.now(
+                UTC
+            ),
         )
 
-        trace.stage_timings.append(timing)
+        trace.stage_timings.append(
+            timing
+        )
 
         trace.metrics.total_stages = len(
             trace.stage_timings
@@ -210,12 +246,16 @@ class ContextObservabilityService:
         stage: str,
     ) -> ContextStageTiming | None:
         """
-        Complete timing for a pipeline stage.
+        Complete timing for pipeline stage.
         """
 
-        trace = self._require_trace(trace_id)
+        trace = self._require_trace(
+            trace_id
+        )
 
-        completed_at = datetime.now(UTC)
+        completed_at = datetime.now(
+            UTC
+        )
 
         for timing in reversed(
             trace.stage_timings
@@ -258,10 +298,12 @@ class ContextObservabilityService:
         compressed_tokens: int = 0,
     ) -> None:
         """
-        Update metrics snapshot for a trace.
+        Update metrics snapshot for trace.
         """
 
-        trace = self._require_trace(trace_id)
+        trace = self._require_trace(
+            trace_id
+        )
 
         trace.metrics = build_metrics_snapshot(
             retrieved_items=retrieved_items,
@@ -297,7 +339,9 @@ class ContextObservabilityService:
         Return trace or raise error.
         """
 
-        trace = self._traces.get(trace_id)
+        trace = self._traces.get(
+            trace_id
+        )
 
         if trace is None:
             raise ValueError(
