@@ -5,8 +5,7 @@ Provides lifecycle management for Context Runtime traces,
 events, timings, and metrics collection.
 
 The service is intentionally implemented as an in-memory
-observability layer for S4-009 foundation. External exporters
-(OpenTelemetry, Prometheus, logs, etc.) can be integrated later.
+observability layer for S4-009 foundation.
 
 Sprint:
     S4-009 Context Runtime Observability
@@ -111,6 +110,9 @@ class ContextObservabilityService:
         trace.completed_at = completed_at
         trace.success = success
 
+        if not success:
+            trace.metrics.failed_stages += 1
+
         self.record_event(
             trace_id,
             (
@@ -136,6 +138,12 @@ class ContextObservabilityService:
             total_latency_ms=total_latency or 0.0,
             metrics=trace.metrics,
             stage_timings=trace.stage_timings,
+            event_count=len(
+                trace.events
+            ),
+            stage_count=len(
+                trace.stage_timings
+            ),
         )
 
     # ------------------------------------------------------------------
@@ -162,6 +170,10 @@ class ContextObservabilityService:
 
         trace.events.append(trace_event)
 
+        trace.metrics.event_count = len(
+            trace.events
+        )
+
         return trace_event
 
     # ------------------------------------------------------------------
@@ -186,6 +198,10 @@ class ContextObservabilityService:
 
         trace.stage_timings.append(timing)
 
+        trace.metrics.total_stages = len(
+            trace.stage_timings
+        )
+
         return timing
 
     def complete_stage(
@@ -201,15 +217,26 @@ class ContextObservabilityService:
 
         completed_at = datetime.now(UTC)
 
-        for timing in reversed(trace.stage_timings):
+        for timing in reversed(
+            trace.stage_timings
+        ):
             if (
                 timing.stage == stage
                 and timing.completed_at is None
             ):
                 timing.completed_at = completed_at
+
                 timing.latency_ms = calculate_latency(
                     timing.started_at,
                     completed_at,
+                )
+
+                trace.metrics.completed_stages = len(
+                    [
+                        item
+                        for item in trace.stage_timings
+                        if item.completed_at is not None
+                    ]
                 )
 
                 return timing
@@ -242,6 +269,20 @@ class ContextObservabilityService:
             selected_items=selected_items,
             original_tokens=original_tokens,
             compressed_tokens=compressed_tokens,
+            event_count=len(
+                trace.events
+            ),
+            total_stages=len(
+                trace.stage_timings
+            ),
+            completed_stages=len(
+                [
+                    stage
+                    for stage in trace.stage_timings
+                    if stage.completed_at is not None
+                ]
+            ),
+            failed_stages=trace.metrics.failed_stages,
         )
 
     # ------------------------------------------------------------------

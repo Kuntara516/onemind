@@ -53,6 +53,8 @@ class ContextStageTiming(BaseModel):
 class ContextMetricsSnapshot(BaseModel):
     """
     Runtime metrics collected during context execution.
+
+    Contains both pipeline metrics and observability health metrics.
     """
 
     retrieved_items: int = Field(
@@ -92,6 +94,34 @@ class ContextMetricsSnapshot(BaseModel):
 
     token_reduction: int | None = Field(
         default=None,
+    )
+
+    # ------------------------------------------------------------------
+    # Observability health metrics
+    # ------------------------------------------------------------------
+
+    event_count: int = Field(
+        default=0,
+        ge=0,
+        description="Total emitted runtime events.",
+    )
+
+    total_stages: int = Field(
+        default=0,
+        ge=0,
+        description="Total pipeline stages tracked.",
+    )
+
+    completed_stages: int = Field(
+        default=0,
+        ge=0,
+        description="Number of successfully completed stages.",
+    )
+
+    failed_stages: int = Field(
+        default=0,
+        ge=0,
+        description="Number of failed stages.",
     )
 
 
@@ -170,6 +200,9 @@ class ContextRuntimeTrace(BaseModel):
 class ContextRuntimeSummary(BaseModel):
     """
     High-level execution summary generated after a trace finishes.
+
+    This object represents the final observability snapshot
+    returned after Context Runtime execution.
     """
 
     trace_id: UUID
@@ -194,4 +227,16 @@ class ContextRuntimeSummary(BaseModel):
 
     stage_timings: list[ContextStageTiming] = Field(
         default_factory=list,
+    )
+
+    event_count: int = Field(
+        default=0,
+        ge=0,
+        description="Total runtime events recorded.",
+    )
+
+    stage_count: int = Field(
+        default=0,
+        ge=0,
+        description="Total stages tracked.",
     )
