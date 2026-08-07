@@ -1,0 +1,266 @@
+"""
+Context Runtime Observability Service
+
+Provides lifecycle management for Context Runtime traces,
+events, timings, and metrics collection.
+
+The service is intentionally implemented as an in-memory
+observability layer for S4-009 foundation. External exporters
+(OpenTelemetry, Prometheus, logs, etc.) can be integrated later.
+
+Sprint:
+    S4-009 Context Runtime Observability
+
+Author:
+    OneMind Platform
+
+License:
+    MIT
+"""
+
+from __future__ import annotations
+
+from datetime import UTC, datetime
+from uuid import UUID
+
+from .events import ContextRuntimeEvent
+from .metrics import (
+    calculate_latency,
+    build_metrics_snapshot,
+)
+from .models import (
+    ContextRuntimeSummary,
+    ContextRuntimeTrace,
+    ContextStageTiming,
+    ContextTraceEvent,
+)
+
+
+class ContextObservabilityService:
+    """
+    In-memory observability service for Context Runtime.
+
+    Responsibilities:
+
+    - Create execution traces
+    - Record lifecycle events
+    - Track stage timing
+    - Collect runtime metrics
+    - Produce execution summaries
+    """
+
+    def __init__(self) -> None:
+        self._traces: dict[UUID, ContextRuntimeTrace] = {}
+
+    # ------------------------------------------------------------------
+    # Trace lifecycle
+    # ------------------------------------------------------------------
+
+    def start_trace(
+        self,
+        *,
+        request_id: str | None = None,
+        task_id: str | None = None,
+        agent_id: str | None = None,
+        metadata: dict | None = None,
+    ) -> ContextRuntimeTrace:
+        """
+        Create and register a new runtime trace.
+        """
+
+        trace = ContextRuntimeTrace(
+            request_id=request_id,
+            task_id=task_id,
+            agent_id=agent_id,
+            metadata=metadata or {},
+        )
+
+        self._traces[trace.trace_id] = trace
+
+        self.record_event(
+            trace.trace_id,
+            ContextRuntimeEvent.CONTEXT_BUILD_STARTED,
+        )
+
+        return trace
+
+    def get_trace(
+        self,
+        trace_id: UUID,
+    ) -> ContextRuntimeTrace | None:
+        """
+        Retrieve trace by identifier.
+        """
+
+        return self._traces.get(trace_id)
+
+    def finish_trace(
+        self,
+        trace_id: UUID,
+        *,
+        success: bool = True,
+    ) -> ContextRuntimeSummary:
+        """
+        Complete trace execution and generate summary.
+        """
+
+        trace = self._require_trace(trace_id)
+
+        completed_at = datetime.now(UTC)
+
+        trace.completed_at = completed_at
+        trace.success = success
+
+        self.record_event(
+            trace_id,
+            (
+                ContextRuntimeEvent.FINISHED
+                if success
+                else ContextRuntimeEvent.FAILED
+            ),
+        )
+
+        total_latency = calculate_latency(
+            trace.started_at,
+            trace.completed_at,
+        )
+
+        return ContextRuntimeSummary(
+            trace_id=trace.trace_id,
+            request_id=trace.request_id,
+            task_id=trace.task_id,
+            agent_id=trace.agent_id,
+            success=success,
+            started_at=trace.started_at,
+            completed_at=completed_at,
+            total_latency_ms=total_latency or 0.0,
+            metrics=trace.metrics,
+            stage_timings=trace.stage_timings,
+        )
+
+    # ------------------------------------------------------------------
+    # Events
+    # ------------------------------------------------------------------
+
+    def record_event(
+        self,
+        trace_id: UUID,
+        event: ContextRuntimeEvent,
+        *,
+        metadata: dict | None = None,
+    ) -> ContextTraceEvent:
+        """
+        Append an event to a trace.
+        """
+
+        trace = self._require_trace(trace_id)
+
+        trace_event = ContextTraceEvent(
+            event=event.value,
+            metadata=metadata or {},
+        )
+
+        trace.events.append(trace_event)
+
+        return trace_event
+
+    # ------------------------------------------------------------------
+    # Stage timing
+    # ------------------------------------------------------------------
+
+    def start_stage(
+        self,
+        trace_id: UUID,
+        stage: str,
+    ) -> ContextStageTiming:
+        """
+        Start timing for a pipeline stage.
+        """
+
+        trace = self._require_trace(trace_id)
+
+        timing = ContextStageTiming(
+            stage=stage,
+            started_at=datetime.now(UTC),
+        )
+
+        trace.stage_timings.append(timing)
+
+        return timing
+
+    def complete_stage(
+        self,
+        trace_id: UUID,
+        stage: str,
+    ) -> ContextStageTiming | None:
+        """
+        Complete timing for a pipeline stage.
+        """
+
+        trace = self._require_trace(trace_id)
+
+        completed_at = datetime.now(UTC)
+
+        for timing in reversed(trace.stage_timings):
+            if (
+                timing.stage == stage
+                and timing.completed_at is None
+            ):
+                timing.completed_at = completed_at
+                timing.latency_ms = calculate_latency(
+                    timing.started_at,
+                    completed_at,
+                )
+
+                return timing
+
+        return None
+
+    # ------------------------------------------------------------------
+    # Metrics
+    # ------------------------------------------------------------------
+
+    def update_metrics(
+        self,
+        trace_id: UUID,
+        *,
+        retrieved_items: int = 0,
+        ranked_items: int = 0,
+        selected_items: int = 0,
+        original_tokens: int = 0,
+        compressed_tokens: int = 0,
+    ) -> None:
+        """
+        Update metrics snapshot for a trace.
+        """
+
+        trace = self._require_trace(trace_id)
+
+        trace.metrics = build_metrics_snapshot(
+            retrieved_items=retrieved_items,
+            ranked_items=ranked_items,
+            selected_items=selected_items,
+            original_tokens=original_tokens,
+            compressed_tokens=compressed_tokens,
+        )
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+
+    def _require_trace(
+        self,
+        trace_id: UUID,
+    ) -> ContextRuntimeTrace:
+        """
+        Return trace or raise error.
+        """
+
+        trace = self._traces.get(trace_id)
+
+        if trace is None:
+            raise ValueError(
+                f"Context runtime trace not found: {trace_id}"
+            )
+
+        return trace
