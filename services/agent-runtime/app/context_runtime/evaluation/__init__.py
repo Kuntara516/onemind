@@ -49,6 +49,11 @@ from .decision import (
     ContextRuntimeDecisionResult,
 )
 
+from .execution import (
+    ContextRuntimeDecisionExecutor,
+    ContextRuntimeExecutionResult,
+)
+
 __all__ = [
     "ContextQualityScore",
     "ContextEvaluationResult",
@@ -61,4 +66,6 @@ __all__ = [
     "ContextRuntimeFeedback",
     "ContextRuntimeDecision",
     "ContextRuntimeFeedbackConsumer",
+    "ContextRuntimeDecisionExecutor",
+    "ContextRuntimeExecutionResult",
 ]
