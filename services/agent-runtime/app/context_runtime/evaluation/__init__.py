@@ -1,23 +1,23 @@
 """
 Context Runtime Evaluation Package
 
-Public exports for Context Quality Evaluation and Runtime Feedback.
+Public exports for Context Quality Evaluation,
+Runtime Feedback, Evaluation Integration,
+and Runtime Feedback Consumption.
 
 Sprint:
-    S4-011-001 Context Quality Evaluation Foundation
-    S4-011-002 Context Evaluation Integration
-    S4-011-003 Context Evaluation & Runtime Feedback
+S4-011 Context Evaluation & Runtime Feedback
 
 Author:
-    OneMind Platform
+OneMind Platform
 
 License:
-    MIT
+MIT
 """
 
 from .models import (
-    ContextEvaluationResult,
     ContextQualityScore,
+    ContextEvaluationResult,
 )
 
 from .evaluator import (
@@ -29,9 +29,9 @@ from .integration import (
 )
 
 from .feedback_models import (
-    ContextFeedbackAction,
-    ContextFeedbackSignal,
     ContextQualityLevel,
+    ContextFeedbackSignal,
+    ContextFeedbackAction,
     ContextRuntimeFeedbackResult,
 )
 
@@ -39,15 +39,21 @@ from .feedback import (
     ContextRuntimeFeedback,
 )
 
+from .consumer import (
+    ContextRuntimeDecision,
+    ContextRuntimeFeedbackConsumer,
+)
 
 __all__ = [
-    "ContextEvaluationResult",
     "ContextQualityScore",
+    "ContextEvaluationResult",
     "ContextEvaluator",
     "ContextEvaluationIntegration",
-    "ContextFeedbackAction",
-    "ContextFeedbackSignal",
     "ContextQualityLevel",
+    "ContextFeedbackSignal",
+    "ContextFeedbackAction",
     "ContextRuntimeFeedbackResult",
     "ContextRuntimeFeedback",
+    "ContextRuntimeDecision",
+    "ContextRuntimeFeedbackConsumer",
 ]
