@@ -2,10 +2,12 @@
 Context Runtime Evaluation Integration
 
 Integration adapter between Context Runtime
-outputs and Context Quality Evaluation.
+outputs, Context Quality Evaluation,
+and Runtime Feedback.
 
 Sprint:
     S4-011-002 Context Evaluation Integration
+    S4-011-003 Context Evaluation & Runtime Feedback
 
 Author:
     OneMind Platform
@@ -26,6 +28,14 @@ from .evaluator import (
     ContextEvaluator,
 )
 
+from .feedback import (
+    ContextRuntimeFeedback,
+)
+
+from .feedback_models import (
+    ContextRuntimeFeedbackResult,
+)
+
 from .models import (
     ContextEvaluationResult,
 )
@@ -39,17 +49,24 @@ class ContextEvaluationIntegration:
 
     - evaluate selected context
     - attach evaluation metadata
-    - isolate runtime from evaluator implementation
+    - generate runtime feedback from evaluation results
+    - isolate runtime from evaluator and feedback implementations
     """
 
     def __init__(
         self,
         evaluator: ContextEvaluator | None = None,
+        feedback: ContextRuntimeFeedback | None = None,
     ) -> None:
 
         self.evaluator = (
             evaluator
             or ContextEvaluator()
+        )
+
+        self.feedback = (
+            feedback
+            or ContextRuntimeFeedback()
         )
 
     def evaluate_context(
@@ -61,6 +78,8 @@ class ContextEvaluationIntegration:
     ) -> ContextEvaluationResult:
         """
         Evaluate selected context quality.
+
+        Existing S4-011-002 contract is preserved.
         """
 
         result = self.evaluator.evaluate(
@@ -83,3 +102,18 @@ class ContextEvaluationIntegration:
         )
 
         return result
+
+    def generate_feedback(
+        self,
+        evaluation: ContextEvaluationResult,
+    ) -> ContextRuntimeFeedbackResult:
+        """
+        Generate runtime feedback from an evaluation result.
+
+        This is intentionally a separate downstream operation and does not
+        alter the existing evaluation contract.
+        """
+
+        return self.feedback.generate(
+            evaluation
+        )
