@@ -44,6 +44,11 @@ from .consumer import (
     ContextRuntimeFeedbackConsumer,
 )
 
+from .decision import (
+    ContextRuntimeDecisionBoundary,
+    ContextRuntimeDecisionResult,
+)
+
 __all__ = [
     "ContextQualityScore",
     "ContextEvaluationResult",
