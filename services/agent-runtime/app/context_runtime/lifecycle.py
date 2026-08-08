@@ -25,9 +25,15 @@ class DefaultContextLifecycleManager(
         context: ContextRuntimeState,
     ) -> ContextRuntimeState:
         """
+        Activate runtime context.
+
+        Supported transitions:
+
         CREATED -> ACTIVE
+        STALE   -> ACTIVE
 
         Idempotent:
+
         ACTIVE -> ACTIVE
         """
 
@@ -36,11 +42,12 @@ class DefaultContextLifecycleManager(
         ):
             return context
 
-        if context.lifecycle != (
-            ContextLifecycle.CREATED
+        if context.lifecycle not in (
+            ContextLifecycle.CREATED,
+            ContextLifecycle.STALE,
         ):
             raise ValueError(
-                "Only CREATED context can be activated"
+                "Only CREATED or STALE context can be activated"
             )
 
         context.lifecycle = (
