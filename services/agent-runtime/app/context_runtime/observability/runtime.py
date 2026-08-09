@@ -5,15 +5,19 @@ Bridges Context Runtime execution lifecycle
 with observability providers.
 
 Sprint:
-    S4-010-004 Observability Runtime Integration
+S4-010-004 Observability Runtime Integration
 
 Responsibilities:
 
 - create runtime traces
-- manage active execution traces
 - emit lifecycle events
 - track pipeline stages
+- update runtime metrics
 - finalize execution telemetry
+- isolate Context Runtime from provider internals
+
+The adapter intentionally owns only opaque execution handles.
+It does not access provider-private state.
 
 Supports:
 
@@ -21,10 +25,10 @@ Supports:
 - OpenTelemetryObservabilityProvider
 
 Author:
-    OneMind Platform
+OneMind Platform
 
 License:
-    MIT
+MIT
 """
 
 from __future__ import annotations
@@ -56,13 +60,18 @@ class ContextRuntimeObservabilityRuntime:
               |                      |
               v                      v
     ContextObservabilityService   OpenTelemetry Provider
+
+    The runtime adapter stores only opaque provider
+    handles associated with execution IDs.
+
+    It must never access provider-private registries
+    such as ``_traces``.
     """
 
     def __init__(
         self,
         provider_manager: ObservabilityProviderManager | None = None,
     ) -> None:
-
         self.provider_manager = (
             provider_manager
             or ObservabilityProviderManager()
@@ -72,12 +81,15 @@ class ContextRuntimeObservabilityRuntime:
             self.provider_manager.get_provider()
         )
 
-        self._active_traces: dict[
+        # Opaque provider handles keyed by Context Runtime
+        # execution ID. The adapter does not inspect provider
+        # private storage.
+        self._execution_traces: dict[
             str,
             Any,
         ] = {}
 
-        self._active_stages: dict[
+        self._execution_stages: dict[
             str,
             Any,
         ] = {}
@@ -93,21 +105,10 @@ class ContextRuntimeObservabilityRuntime:
         attributes: dict[str, Any] | None = None,
     ) -> Any:
         """
-        Start execution trace.
+        Start an execution trace.
 
-        Supports:
-
-        ContextObservabilityService:
-            start_trace(
-                request_id=,
-                metadata=
-            )
-
-        OpenTelemetry provider:
-            start_trace(
-                name=,
-                attributes=
-            )
+        The provider-specific construction details remain
+        behind the provider boundary.
         """
 
         metadata = {
@@ -116,20 +117,17 @@ class ContextRuntimeObservabilityRuntime:
         }
 
         try:
-
             trace = self.provider.start_trace(
                 request_id=execution_id,
                 metadata=metadata,
             )
-
         except TypeError:
-
             trace = self.provider.start_trace(
                 name="context_runtime_execution",
                 attributes=metadata,
             )
 
-        self._active_traces[
+        self._execution_traces[
             execution_id
         ] = trace
 
@@ -140,48 +138,61 @@ class ContextRuntimeObservabilityRuntime:
         execution_id: str,
         *,
         success: bool = True,
-    ) -> None:
+    ) -> Any:
         """
-        Finish execution trace.
+        Finish an execution trace.
+
+        Returns the provider's completion result when the
+        provider exposes a Context Runtime summary.
+
+        External telemetry providers that only expose an
+        ``end_trace`` operation return ``None``.
         """
 
-        trace = self._active_traces.pop(
+        trace = self._execution_traces.pop(
             execution_id,
             None,
         )
 
         if trace is None:
-            return
+            return None
 
-        if hasattr(
-            self.provider,
-            "end_trace",
-        ):
-
-            self.provider.end_trace(
-                trace,
-                success=success,
-            )
-
-            return
-
-        if hasattr(
+        # ContextObservabilityService boundary.
+        finish_trace = getattr(
             self.provider,
             "finish_trace",
-        ):
+            None,
+        )
 
+        if callable(finish_trace):
             trace_id = getattr(
                 trace,
                 "trace_id",
                 None,
             )
 
-            if trace_id is not None:
+            if trace_id is None:
+                return None
 
-                self.provider.finish_trace(
-                    trace_id,
-                    success=success,
-                )
+            return finish_trace(
+                trace_id,
+                success=success,
+            )
+
+        # External telemetry provider boundary.
+        end_trace = getattr(
+            self.provider,
+            "end_trace",
+            None,
+        )
+
+        if callable(end_trace):
+            end_trace(
+                trace,
+                success=success,
+            )
+
+        return None
 
     # ---------------------------------------------------------
     # Events
@@ -193,17 +204,20 @@ class ContextRuntimeObservabilityRuntime:
         event: ContextRuntimeEvent,
         *,
         attributes: dict[str, Any] | None = None,
-    ) -> None:
+    ) -> Any:
         """
-        Record runtime lifecycle event.
+        Record a runtime lifecycle event.
+
+        The adapter resolves the opaque execution handle
+        and delegates through the provider's public API.
         """
 
-        trace = self._active_traces.get(
+        trace = self._execution_traces.get(
             execution_id
         )
 
         if trace is None:
-            return
+            return None
 
         trace_id = getattr(
             trace,
@@ -211,56 +225,36 @@ class ContextRuntimeObservabilityRuntime:
             None,
         )
 
-        if hasattr(
+        record_event = getattr(
             self.provider,
             "record_event",
-        ) and trace_id is not None:
+            None,
+        )
 
-            self.provider.record_event(
+        if callable(record_event) and trace_id is not None:
+            return record_event(
                 trace_id,
                 event,
                 metadata=attributes,
             )
 
-            return
-
-        if hasattr(
+        add_event = getattr(
             trace,
             "add_event",
-        ):
+            None,
+        )
 
-            trace.add_event(
+        if callable(add_event):
+            return add_event(
                 event.value,
                 attributes or {},
             )
 
+        return None
+
     # ---------------------------------------------------------
     # Stage lifecycle
     # ---------------------------------------------------------
-
-    def _get_trace_id(
-        self,
-        execution_id: str,
-    ):
-        """
-        Resolve provider trace identifier.
-
-        Memory provider uses UUID trace_id.
-        OpenTelemetry provider uses span object.
-        """
-
-        trace = self._active_traces.get(
-            execution_id
-        )
-
-        if trace is None:
-            return None
-
-        return getattr(
-            trace,
-            "trace_id",
-            trace,
-        )
 
     def start_stage(
         self,
@@ -268,40 +262,49 @@ class ContextRuntimeObservabilityRuntime:
         stage: str,
     ) -> Any:
         """
-        Start context pipeline stage.
+        Start a context pipeline stage.
+
+        Provider-specific stage handles are stored as
+        opaque values by the adapter.
         """
 
-        trace_id = self._get_trace_id(
+        trace = self._execution_traces.get(
             execution_id
         )
 
-        if hasattr(
+        if trace is None:
+            return None
+
+        trace_id = getattr(
+            trace,
+            "trace_id",
+            trace,
+        )
+
+        start_stage = getattr(
             self.provider,
             "start_stage",
-        ):
+            None,
+        )
 
-            try:
+        if not callable(start_stage):
+            return None
 
-                span = self.provider.start_stage(
-                    trace_id,
-                    stage,
-                )
+        try:
+            stage_handle = start_stage(
+                trace_id,
+                stage,
+            )
+        except TypeError:
+            stage_handle = start_stage(
+                stage,
+            )
 
-            except TypeError:
-
-                span = self.provider.start_stage(
-                    stage,
-                )
-
-        else:
-
-            span = None
-
-        self._active_stages[
+        self._execution_stages[
             f"{execution_id}:{stage}"
-        ] = span
+        ] = stage_handle
 
-        return span
+        return stage_handle
 
     def finish_stage(
         self,
@@ -309,48 +312,116 @@ class ContextRuntimeObservabilityRuntime:
         stage: str,
         *,
         attributes: dict[str, Any] | None = None,
-    ) -> None:
+    ) -> Any:
         """
-        Finish context pipeline stage.
+        Finish a context pipeline stage.
         """
 
         key = (
             f"{execution_id}:{stage}"
         )
 
-        span = self._active_stages.pop(
+        stage_handle = self._execution_stages.pop(
             key,
             None,
         )
 
-        if span is None:
-            return
+        if stage_handle is None:
+            return None
 
-        if hasattr(
+        end_stage = getattr(
             self.provider,
             "end_stage",
-        ):
+            None,
+        )
 
-            self.provider.end_stage(
-                span,
+        if callable(end_stage):
+            return end_stage(
+                stage_handle,
                 attributes=attributes,
             )
 
-            return
-
-        if hasattr(
+        complete_stage = getattr(
             self.provider,
             "complete_stage",
-        ):
+            None,
+        )
 
-            trace_id = self._get_trace_id(
+        if callable(complete_stage):
+            trace = self._execution_traces.get(
                 execution_id
             )
 
-            self.provider.complete_stage(
+            if trace is None:
+                return None
+
+            trace_id = getattr(
+                trace,
+                "trace_id",
+                trace,
+            )
+
+            return complete_stage(
                 trace_id,
                 stage,
             )
+
+        return None
+
+    # ---------------------------------------------------------
+    # Metrics
+    # ---------------------------------------------------------
+
+    def update_metrics(
+        self,
+        execution_id: str,
+        *,
+        retrieved_items: int = 0,
+        ranked_items: int = 0,
+        selected_items: int = 0,
+        original_tokens: int = 0,
+        compressed_tokens: int = 0,
+    ) -> Any:
+        """
+        Update metrics for an active runtime trace.
+
+        The Context Runtime integration layer must use this
+        method instead of accessing provider state directly.
+        """
+
+        trace = self._execution_traces.get(
+            execution_id
+        )
+
+        if trace is None:
+            return None
+
+        trace_id = getattr(
+            trace,
+            "trace_id",
+            None,
+        )
+
+        if trace_id is None:
+            return None
+
+        update_metrics = getattr(
+            self.provider,
+            "update_metrics",
+            None,
+        )
+
+        if not callable(update_metrics):
+            return None
+
+        return update_metrics(
+            trace_id,
+            retrieved_items=retrieved_items,
+            ranked_items=ranked_items,
+            selected_items=selected_items,
+            original_tokens=original_tokens,
+            compressed_tokens=compressed_tokens,
+        )
 
     # ---------------------------------------------------------
     # Context runtime lifecycle helpers
@@ -359,12 +430,12 @@ class ContextRuntimeObservabilityRuntime:
     def context_build_started(
         self,
         execution_id: str,
-    ) -> None:
+    ) -> Any:
         """
         Emit context build started event.
         """
 
-        self.record_event(
+        return self.record_event(
             execution_id,
             ContextRuntimeEvent.CONTEXT_BUILD_STARTED,
         )
@@ -374,9 +445,12 @@ class ContextRuntimeObservabilityRuntime:
         execution_id: str,
         *,
         success: bool = True,
-    ) -> None:
+    ) -> Any:
         """
         Complete context runtime execution.
+
+        The completion event is emitted before the trace
+        is finalized.
         """
 
         self.record_event(
@@ -388,7 +462,7 @@ class ContextRuntimeObservabilityRuntime:
             ),
         )
 
-        self.finish_trace(
+        return self.finish_trace(
             execution_id,
             success=success,
         )

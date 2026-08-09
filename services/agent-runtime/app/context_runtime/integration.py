@@ -1,4 +1,3 @@
-```python
 """
 Context Runtime Integration
 
@@ -178,7 +177,6 @@ class ContextRuntimeIntegration:
                 },
             )
 
-
             #
             # Ranking Stage
             #
@@ -213,7 +211,6 @@ class ContextRuntimeIntegration:
                     "items": len(ranked),
                 },
             )
-
 
             #
             # Selection Stage
@@ -254,7 +251,6 @@ class ContextRuntimeIntegration:
                 },
             )
 
-
             #
             # Assembly Stage
             #
@@ -291,55 +287,32 @@ class ContextRuntimeIntegration:
                 ContextRuntimeEvent.ASSEMBLY_COMPLETED,
             )
 
-
             #
             # Metrics
             #
 
-            trace = self.observability._active_traces.get(
-                execution_id
+            self.observability.update_metrics(
+                execution_id,
+                retrieved_items=len(
+                    candidates
+                ),
+                ranked_items=len(
+                    ranked
+                ),
+                selected_items=len(
+                    selected.items
+                ),
+                original_tokens=getattr(
+                    assembled,
+                    "total_tokens",
+                    0,
+                ),
             )
-
-            trace_id = getattr(
-                trace,
-                "trace_id",
-                None,
-            )
-
-            if trace_id is not None:
-
-                provider = (
-                    self.observability.provider
-                )
-
-                if hasattr(
-                    provider,
-                    "update_metrics",
-                ):
-                    provider.update_metrics(
-                        trace_id,
-                        retrieved_items=len(
-                            candidates
-                        ),
-                        ranked_items=len(
-                            ranked
-                        ),
-                        selected_items=len(
-                            selected.items
-                        ),
-                        original_tokens=getattr(
-                            assembled,
-                            "total_tokens",
-                            0,
-                        ),
-                    )
-
 
             self.observability.finish_trace(
                 execution_id,
                 success=True,
             )
-
 
             #
             # Agent Runtime Context
@@ -369,7 +342,6 @@ class ContextRuntimeIntegration:
 
             return assembled
 
-
         except Exception:
 
             self.observability.finish_trace(
@@ -378,7 +350,6 @@ class ContextRuntimeIntegration:
             )
 
             raise
-
 
     @staticmethod
     def _build_query(
@@ -393,7 +364,6 @@ class ContextRuntimeIntegration:
         ]
 
         if task.input:
-
             parts.append(
                 str(
                     task.input
@@ -401,4 +371,3 @@ class ContextRuntimeIntegration:
             )
 
         return " ".join(parts)
-```
