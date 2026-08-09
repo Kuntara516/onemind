@@ -1,71 +1,138 @@
-# S4-NEXT-PHASE-DECISION-GATE
+# OneMind — S4 Next Phase Decision Gate
 
-**Status:** FINAL GATE DECISION — SUCCESSOR TASK NOT YET ASSIGNED
-**Baseline:** `v0.9.10-s4-context-runtime-control`
-**Baseline Commit:** `d6b1253`
+## S4-011 Context Intelligence / Decision Boundary
+
+**Document:** `docs/implementation/sprints/S4-NEXT-PHASE-DECISION-GATE.md`
+**Project:** OneMind
 **Branch:** `feature/sprint4-context-intelligence`
-
-## 1. Purpose
-
-This document is the planning gate immediately following the frozen Sprint 4 Context Intelligence runtime-control boundary.
-
-Its purpose is to determine the intended next architectural capability **before** assigning or implementing a successor task such as `S4-011-007`.
-
-This document records the final planning reconciliation against the repository implementation.
-
-It is a planning artifact, not an implementation specification.
+**Purpose:** Freeze the decision boundary before entering runtime-level context control integration.
 
 ---
 
-## 2. Frozen Baseline
+## 1. Decision Status
 
-The current Sprint 4 implementation boundary is:
+**Status:** ACCEPTED
+
+**Decision:** `REFRESH` is a runtime control signal for the **next execution**, not an immediate re-execution of the current Agent invocation.
+
+The current execution completes under the context state that was used for that invocation.
+
+If evaluation determines that context should be refreshed, the decision is carried forward as a runtime control artifact. The refresh becomes effective at the **next eligible execution boundary**.
+
+This decision is now the governing contract for the next S4-011 implementation phase.
+
+---
+
+## 2. Current S4-011 Baseline
+
+The Context Runtime already contains the following conceptual layers:
 
 ```text
+Context Retrieval
+      ↓
+Context Ranking
+      ↓
+Context Selection
+      ↓
 Context Assembly
-    ↓
-Retrieval / Ranking / Compression
-    ↓
-Context Runtime
-    ↓
-Runtime Observability
-    ↓
-Context Quality Evaluation
-    ↓
-Runtime Feedback
-    ↓
-Feedback Consumer
-    ↓
-Decision Boundary
-    ↓
-Decision Execution
-    ↓
+      ↓
+Context Runtime State
+      ↓
+Context Evaluation
+      ↓
+Decision
+      ↓
+Execution Artifact
+      ↓
 Runtime Control
-    ↓
-Context Refresh
+      ↓
+Refresh Engine
 ```
 
-The following contracts are frozen and must be treated as upstream inputs for any future work:
+The current implementation establishes:
 
-* Context evaluation contracts
-* Runtime feedback contracts
-* Feedback consumer contract
-* `ContextRuntimeDecisionResult`
-* Decision execution contract
-* Runtime control contract
-* Context refresh engine contract
+* context runtime state
+* lifecycle management
+* refresh policy
+* refresh engine
+* evaluation
+* feedback classification
+* decision generation
+* execution artifact
+* decision controller
+* runtime integration
+* observability
 
-Future work must not move responsibilities backward into these layers unless a concrete defect is demonstrated.
+The remaining architectural question is **when a runtime control action becomes effective relative to Agent execution**.
 
 ---
 
-## 3. Repository Reconciliation
+## 3. Evidence From Current Implementation
 
-The planning gate was reconciled against the actual Agent Runtime and Context Runtime implementation.
+### 3.1 Refresh Engine
 
-### 3.1 Agent Runtime execution path
+`services/agent-runtime/app/context_runtime/refresh.py`
 
-The current execution lifecycle is:
+`DefaultContextRefreshEngine` is responsible for:
+
+* determining whether refresh is due
+* applying lifecycle refresh
+* updating refresh timestamps
+
+It explicitly does **not**:
+
+* retrieve context
+* rank context
+* select context
+* modify context content
+* evaluate relevance
+* invoke Agent Runtime
+
+The engine therefore represents a lifecycle/control primitive rather than an execution restart mechanism.
+
+---
+
+### 3.2 Decision Controller
+
+`services/agent-runtime/app/context_runtime/control.py`
+
+`ContextRuntimeDecisionController` currently maps execution artifacts to runtime actions:
+
+```text
+RETAIN
+    ↓
+no-op
+
+REVIEW
+    ↓
+no-op
+
+REFRESH
+    ↓
+ContextRefreshEngine.refresh()
+```
+
+The controller reports whether refresh was actually applied.
+
+This establishes a clean boundary:
+
+```text
+Evaluation / Decision
+        ↓
+Execution Artifact
+        ↓
+Decision Controller
+        ↓
+Refresh Engine
+```
+
+The controller does not evaluate context and does not invoke the Agent.
+
+---
+
+### 3.3 Agent Execution Boundary
+
+The current execution pipeline is:
 
 ```text
 ExecutionService
@@ -74,509 +141,788 @@ TaskManager
     ↓
 Executor
     ↓
-AgentInvocationRequest
-    ↓
 AgentInvoker
+    ↓
+Agent
 ```
 
-`Executor` owns:
-
-* lifecycle coordination
-* agent invocation
-* result handling
-* execution metadata
-* execution trace events
-
-`TaskManager` remains responsible for task coordination and tracking.
-
-No Context Runtime decision or control responsibility is currently owned by `Executor`.
-
----
-
-### 3.2 Existing Agent Runtime context transport boundary
-
-`AgentInvocationRequest` already accepts:
+`ExecutionService` creates `AgentContext` before task execution:
 
 ```text
 AgentTask
-agent_id
-AgentContext
-```
-
-`AgentContext` already provides a runtime transport object capable of carrying:
-
-```text
-assembled_context
-runtime metadata
-```
-
-The existing Context Runtime integration layer stores assembled context into `AgentContext`.
-
-Therefore, the repository already contains a natural transport boundary:
-
-```text
-Context Runtime
-      ↓
-AgentContext
-      ↓
-AgentInvocationRequest
-      ↓
-AgentInvoker
-```
-
-No new generic context transport abstraction is required by the current evidence.
-
----
-
-### 3.3 Existing Context Runtime assembly integration
-
-`ContextRuntimeIntegration` already provides:
-
-```text
-Retrieve
-    ↓
-Rank
-    ↓
-Select
-    ↓
-Assemble
     ↓
 AgentContext
-```
-
-It also integrates Context Runtime observability.
-
-Therefore, the next phase must **not** be defined as a generic "Context Runtime → Agent Runtime integration".
-
-That integration already exists at the context assembly level.
-
----
-
-### 3.4 Existing runtime-control boundary
-
-The current control architecture is:
-
-```text
-ContextRuntimeExecutionResult
-        ↓
-ContextRuntimeDecisionController
-        ↓
-ContextRuntimeControlResult
-        ↓
-ContextRuntimeCoordinator
-        ↓
-ContextRuntimeState
-```
-
-`ContextRuntimeDecisionController` is explicitly responsible for:
-
-* preserving execution artifact identity
-* applying explicit actions
-* treating `RETAIN` as a no-op
-* treating `REVIEW` as a no-op
-* delegating `REFRESH` to `ContextRefreshEngine`
-* reporting whether refresh was applied
-
-It intentionally does not:
-
-* evaluate context quality
-* produce decisions
-* retrieve context
-* rank context
-* select context
-* mutate context content
-* invoke Agent Runtime
-
-This boundary remains valid and is frozen.
-
----
-
-## 4. Confirmed Architectural Gap
-
-The repository evidence confirms that the remaining gap is **not another intelligence primitive**.
-
-The actual boundary is:
-
-```text
-Context Runtime Control
-        ↓
-?????????????????????????
-        ↓
-Agent Runtime Execution Lifecycle
-```
-
-More specifically:
-
-```text
-ContextRuntimeControlResult
-        ↓
-Execution Integration Boundary
-        ↓
-AgentContext / Agent Runtime lifecycle
-```
-
-The existing Context Runtime control capability is currently exercised within the Context Runtime domain.
-
-The Agent Runtime `Executor` does not currently consume or observe that control outcome.
-
-Therefore, the remaining gap is:
-
-> **Runtime-level integration of the existing Context Runtime control capability with the Agent Runtime execution lifecycle.**
-
----
-
-## 5. Final Gate Decision
-
-### Decision: CONTINUE
-
-Sprint 4 should continue beyond `v0.9.10`.
-
-### Approved Planning Direction
-
-**Runtime-Level Context Control Integration**
-
-The intended capability is:
-
-> Wire the existing Context Runtime control capability into the Agent Runtime execution lifecycle through an explicit downstream integration boundary, without moving Context Intelligence ownership into the Executor or AgentInvoker.
-
-This is approved as a **planning direction only**.
-
-It is not yet an implementation authorization.
-
----
-
-## 6. Integration Ownership
-
-The repository evidence indicates the following ownership model:
-
-```text
-Agent Runtime
-    │
-    ▼
+    ↓
+TaskManager
+    ↓
 Executor
-    │
-    │ execution integration
-    ▼
-AgentContext / invocation boundary
-    │
-    ▼
+    ↓
 AgentInvoker
+    ↓
+Agent
 ```
 
-while Context Runtime remains responsible for:
+The existing `AgentContext` is attached to the current invocation.
+
+Therefore, changing the context during an already-running invocation would introduce a new semantic problem:
 
 ```text
-ContextRuntimeCoordinator
-    │
-    ├── ContextRuntimeState
-    ├── Budget
-    ├── Lifecycle
-    └── Decision Control
-            │
-            ▼
-      ContextRuntimeControlResult
+current invocation
+        ↓
+context changes
+        ↓
+same invocation continues
 ```
 
-The successor design must preserve this separation.
-
-### Executor must not own:
-
-* context quality evaluation
-* feedback interpretation
-* decision generation
-* refresh policy
-* context lifecycle policy
-* direct `ContextRuntimeState` mutation
-
-### Context Runtime must not own:
-
-* Agent invocation
-* Agent lifecycle
-* task lifecycle
-* execution orchestration
-
-The successor boundary must connect these domains without collapsing their responsibilities.
+That behavior is not currently defined by the runtime contract.
 
 ---
 
-## 7. Existing Transport Boundary
+## 4. Decision: REFRESH = NEXT EXECUTION
 
-The existing transport boundary is:
+### 4.1 Accepted Semantics
+
+The following semantics are frozen:
 
 ```text
-Context Runtime
-      ↓
-AgentContext
-      ↓
-AgentInvocationRequest
-      ↓
-AgentInvoker
+Current Execution
+      │
+      │ context snapshot/state
+      ▼
+   Agent runs
+      │
+      ▼
+ Execution completes
+      │
+      ▼
+ Evaluation
+      │
+      ▼
+ Decision
+      │
+      ├── RETAIN
+      │      └── no control action
+      │
+      ├── REVIEW
+      │      └── no control action
+      │
+      └── REFRESH
+             │
+             ▼
+       mark refresh/control intent
+             │
+             ▼
+      NEXT EXECUTION
+             │
+             ▼
+      rebuild / refresh context
 ```
 
-`AgentContext` is therefore the primary existing runtime context carrier.
+The important invariant is:
 
-A successor task may extend the information carried across this boundary only if required by an explicitly approved contract.
-
-No new transport abstraction should be introduced without demonstrating a concrete need.
+> A `REFRESH` decision does not restart or mutate the current Agent invocation.
 
 ---
 
-## 8. Runtime Control Semantics
+## 5. Why REFRESH Must Not Re-Execute Immediately
 
-The existing action semantics are:
+Immediate re-execution would create several undefined behaviors.
 
-### RETAIN
+### 5.1 Duplicate Agent Execution
+
+A single task could result in:
 
 ```text
-Decision
-  ↓
-RETAIN
-  ↓
-No runtime mutation
-  ↓
-Execution may continue
+Invocation #1
+    ↓
+Evaluation
+    ↓
+REFRESH
+    ↓
+Invocation #2
 ```
 
-### REVIEW
+Without an explicit retry contract, this would make one user request produce multiple Agent executions.
+
+That is unsafe for operations with side effects.
+
+---
+
+### 5.2 Ambiguous Task Lifecycle
+
+The existing task lifecycle has execution states independent from context lifecycle.
+
+Immediate re-execution would require a new task lifecycle contract describing:
+
+* retry
+* replay
+* replacement execution
+* attempt numbering
+* failure semantics
+* idempotency
+* trace correlation
+
+None of these are currently part of the S4-011 decision boundary.
+
+Therefore they must not be introduced implicitly by `REFRESH`.
+
+---
+
+### 5.3 Context Mutation During Invocation
+
+An Agent invocation receives an `AgentContext`.
+
+If refresh mutates the context while the Agent is executing, the meaning of:
 
 ```text
+context
+```
+
+would become time-dependent.
+
+The same invocation could observe different context states at different moments.
+
+That violates the desired execution boundary:
+
+```text
+Invocation
+    ↓
+stable context
+    ↓
+Agent execution
+    ↓
+result
+```
+
+---
+
+## 6. New Runtime Contract
+
+The accepted runtime contract is:
+
+### Current Execution
+
+The current execution uses the context available at its execution boundary.
+
+```text
+Context prepared
+      ↓
+Invocation starts
+      ↓
+Context remains stable
+      ↓
+Invocation completes
+```
+
+### Post-Execution Evaluation
+
+After execution:
+
+```text
+Execution Result
+      ↓
+Context Evaluation
+      ↓
 Decision
-  ↓
-REVIEW
-  ↓
-No runtime mutation
-  ↓
-Execution may continue
 ```
 
 ### REFRESH
 
+If the decision is:
+
 ```text
-Decision
-  ↓
 REFRESH
-  ↓
-ContextRuntimeCoordinator
-  ↓
-ContextRuntimeControlResult
-  ↓
-Execution lifecycle
 ```
 
-The final arrow remains the unresolved architectural decision.
+the runtime records that the context should be refreshed before the next eligible execution.
+
+It does not:
+
+* restart the current task
+* invoke the Agent again
+* mutate the current invocation context
+* replace the current execution result
 
 ---
 
-## 9. Remaining Architectural Decision — Refresh Timing
+## 7. Effective State Model
 
-Before assigning a concrete successor task ID, the project must explicitly define the temporal semantics of `REFRESH`.
-
-The possible semantics are:
+The runtime should conceptually distinguish:
 
 ```text
-A. Current execution
-B. Next execution
-C. Both current and next execution
+CURRENT EXECUTION STATE
+        +
+PENDING CONTEXT CONTROL
 ```
 
-The current `DefaultContextRefreshEngine` performs lifecycle-oriented refresh:
+For example:
 
 ```text
-ACTIVE → STALE → ACTIVE
+Context Runtime State
+---------------------
+lifecycle
+last_refresh
+updated_at
+metadata
+
+Pending Control
+---------------
+action = REFRESH
+evaluation_id
 ```
 
-or:
+The exact persistence model is implementation-specific and is intentionally deferred to S4-011-007.
+
+---
+
+## 8. Decision Artifact Semantics
+
+The existing execution artifact remains authoritative for the control decision.
+
+Conceptually:
 
 ```text
-STALE → ACTIVE
+ContextRuntimeExecutionResult
 ```
 
-and updates refresh timestamps.
+contains:
 
-It does **not** currently rebuild assembled context content.
+```text
+evaluation_id
+action
+metadata
+```
+
+The accepted interpretation is:
+
+| Action    | Current Execution | Next Execution                                 |
+| --------- | ----------------- | ---------------------------------------------- |
+| `RETAIN`  | Continue normally | Continue with existing context policy          |
+| `REVIEW`  | Continue normally | Requires no automatic refresh                  |
+| `REFRESH` | Continue normally | Refresh context before next eligible execution |
+
+The key distinction is:
+
+```text
+REFRESH ≠ RETRY
+```
+
+and:
+
+```text
+REFRESH ≠ RE-EXECUTE
+```
+
+---
+
+## 9. Decision Controller Boundary
+
+`ContextRuntimeDecisionController` remains responsible for applying the decision artifact to runtime control.
+
+Its architectural responsibility is:
+
+```text
+Decision Artifact
+      ↓
+Control Interpretation
+      ↓
+Runtime Control State
+```
+
+It must not become responsible for:
+
+* Agent invocation
+* task retry
+* task replay
+* context retrieval
+* context ranking
+* context selection
+* context evaluation
+
+The controller therefore remains deliberately narrow.
+
+---
+
+## 10. Refresh Engine Boundary
+
+`DefaultContextRefreshEngine` remains responsible for the actual lifecycle refresh operation.
+
+Its contract remains:
+
+```text
+should_refresh(state)
+        ↓
+      bool
+
+refresh(state)
+        ↓
+ContextRuntimeState
+```
+
+The refresh engine does not determine:
+
+```text
+why refresh was requested
+```
+
+and does not determine:
+
+```text
+whether the Agent should execute again
+```
+
+Those decisions belong to higher runtime control layers.
+
+---
+
+## 11. Next Phase
+
+The next implementation phase is:
+
+# S4-011-007 — Runtime-Level Context Control Integration
+
+The purpose of S4-011-007 is to connect the existing decision/control layer to the Agent Runtime execution boundary without violating the newly frozen semantics.
+
+The integration target is:
+
+```text
+Agent Execution
+      ↓
+Evaluation
+      ↓
+Decision
+      ↓
+Control
+      ↓
+Pending Refresh
+      ↓
+NEXT EXECUTION
+      ↓
+Context Refresh / Rebuild
+      ↓
+Agent Execution
+```
+
+The key architectural change is therefore **not** to restart execution.
+
+The change is to make the runtime aware of pending context control before the next eligible execution.
+
+---
+
+## 12. S4-011-007 Scope
+
+The next phase should investigate and implement only the following:
+
+### 12.1 Execution Boundary
+
+Identify the exact point where `AgentContext` is constructed and determine where pending context control should be consulted.
+
+Current location:
+
+```text
+services/agent-runtime/app/runtime/execution.py
+```
+
+---
+
+### 12.2 Pending Control
+
+Define the runtime representation of a pending:
+
+```text
+REFRESH
+```
+
+control action.
+
+The representation must preserve:
+
+* action
+* evaluation identity
+* context identity where available
+* control timestamp where required
+
+---
+
+### 12.3 Next-Execution Application
+
+Before constructing the effective context for a new execution:
+
+```text
+pending REFRESH
+      ↓
+apply refresh policy
+      ↓
+obtain refreshed runtime state
+      ↓
+assemble effective context
+      ↓
+invoke Agent
+```
+
+---
+
+### 12.4 Current Execution Isolation
+
+The implementation must prove that:
+
+```text
+REFRESH
+```
+
+does not cause:
+
+* second Agent invocation
+* task retry
+* task replay
+* duplicate side effects
+* mutation of the active invocation context
+
+---
+
+### 12.5 Test Coverage
+
+S4-011-007 must add tests proving at minimum:
+
+1. `RETAIN` does not create pending refresh.
+2. `REVIEW` does not create pending refresh.
+3. `REFRESH` creates pending refresh/control state.
+4. Current execution completes exactly once.
+5. Next execution observes the pending refresh.
+6. Refresh occurs before the next Agent invocation.
+7. The refreshed context is the one supplied to the next invocation.
+8. Pending refresh is consumed exactly once.
+9. A completed refresh does not cause duplicate refresh.
+10. Current invocation context remains unchanged after a post-execution `REFRESH` decision.
+
+---
+
+## 13. Explicit Non-Goals
+
+S4-011-007 must not introduce:
+
+### Retry Engine
+
+No automatic retry semantics.
+
+### Replay Engine
+
+No replay of an existing task.
+
+### Agent Re-Invocation
+
+No second Agent call caused by `REFRESH` during the same execution.
+
+### Context Hot-Swap
+
+No mutation of active invocation context.
+
+### New Evaluation Policy
+
+Evaluation semantics are already established.
+
+### New Decision Policy
+
+Decision semantics are already established.
+
+### New Retrieval Strategy
+
+Retrieval remains outside the control layer.
+
+---
+
+## 14. Architectural Invariants
+
+The following invariants are frozen for subsequent implementation.
+
+### Invariant 1 — One Invocation
+
+One execution request produces one Agent invocation unless a future explicit retry contract says otherwise.
+
+```text
+request
+  ↓
+one invocation
+  ↓
+one result
+```
+
+---
+
+### Invariant 2 — Stable Invocation Context
+
+The context supplied to an Agent remains stable for that invocation.
+
+```text
+Invocation Start
+      ↓
+Context Snapshot
+      ↓
+Agent
+      ↓
+Invocation End
+```
+
+---
+
+### Invariant 3 — REFRESH Is Deferred
+
+```text
+REFRESH
+```
+
+means:
+
+> refresh context before the next eligible execution.
+
+It does not mean:
+
+> execute this task again.
+
+---
+
+### Invariant 4 — Evaluation Does Not Invoke
+
+Evaluation determines a decision.
+
+```text
+evaluation
+    ↓
+decision
+```
+
+It does not execute the Agent.
+
+---
+
+### Invariant 5 — Decision Does Not Execute
+
+The decision layer determines:
+
+```text
+RETAIN
+REVIEW
+REFRESH
+```
+
+It does not directly execute the Agent.
+
+---
+
+### Invariant 6 — Control Does Not Evaluate
+
+The control layer applies an already-created execution artifact.
+
+It does not recalculate context quality.
+
+---
+
+### Invariant 7 — Refresh Does Not Retrieve
+
+The refresh engine manages lifecycle refresh semantics.
+
+Context retrieval/reconstruction remains a separate runtime responsibility.
+
+---
+
+## 15. Target Architecture
+
+The target S4-011 architecture is:
+
+```text
+                    ┌─────────────────────┐
+                    │   Agent Execution   │
+                    └──────────┬──────────┘
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │   Context Runtime   │
+                    │   Integration       │
+                    └──────────┬──────────┘
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │ Context Assembly    │
+                    └──────────┬──────────┘
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │ Agent Invocation    │
+                    └──────────┬──────────┘
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │ Execution Result    │
+                    └──────────┬──────────┘
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │ Context Evaluation  │
+                    └──────────┬──────────┘
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │ Decision            │
+                    └──────────┬──────────┘
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │ Runtime Control     │
+                    └──────────┬──────────┘
+                               │
+                         REFRESH only
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │ Pending Control     │
+                    └──────────┬──────────┘
+                               │
+                        next execution
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │ Refresh / Rebuild   │
+                    │ Context             │
+                    └─────────────────────┘
+```
+
+---
+
+## 16. Decision Gate Outcome
+
+### ACCEPT
+
+The following decision is frozen:
+
+```text
+REFRESH = NEXT EXECUTION
+```
 
 Therefore:
 
-> A `REFRESH` control outcome must not automatically be interpreted as "the current Agent invocation receives newly retrieved context" unless a future contract explicitly defines and implements that behavior.
+```text
+REFRESH
+    ≠
+RETRY
+```
 
-This distinction must be resolved before implementation.
+```text
+REFRESH
+    ≠
+REPLAY
+```
+
+```text
+REFRESH
+    ≠
+IMMEDIATE RE-EXECUTION
+```
+
+Instead:
+
+```text
+REFRESH
+    =
+PENDING CONTEXT CONTROL
+FOR THE NEXT ELIGIBLE EXECUTION
+```
 
 ---
 
-## 10. Recommended Successor Contract Shape
+## 17. Implementation Order
 
-If the refresh timing decision is approved, the successor capability should conceptually follow:
+The implementation sequence after this decision gate is:
 
 ```text
-ContextRuntimeDecisionResult
+S4-011-007-001
+Inspect execution boundary and pending-control insertion point
+
         ↓
-ContextRuntimeExecutionResult
+
+S4-011-007-002
+Define pending refresh/control runtime state
+
         ↓
-ContextRuntimeControlResult
+
+S4-011-007-003
+Integrate pending control into next execution context preparation
+
         ↓
-Execution Integration Boundary
+
+S4-011-007-004
+Prove current execution isolation
+
         ↓
-Agent Runtime Lifecycle
+
+S4-011-007-005
+Add next-execution refresh integration tests
+
+        ↓
+
+S4-011-007-006
+Run full regression
+
+        ↓
+
+Decision / Release Gate
 ```
 
-The integration boundary should consume the frozen control artifacts.
-
-It must not reconstruct decisions from:
-
-* evaluation metrics
-* feedback
-* retrieval results
-* ranking results
-* selection results
-
-The existing Context Runtime decision/control chain remains the authoritative source of runtime control intent.
+No implementation should proceed beyond the existing decision boundary without preserving the invariants defined in this document.
 
 ---
 
-## 11. Explicit Non-Goals
+## 18. Final Decision Record
 
-The planning direction does not authorize:
+**Decision:** `REFRESH = NEXT EXECUTION`
 
-* creation of `S4-011-007` yet
-* implementation changes
-* modification of frozen S4-011 contracts
-* moving decision logic into `Executor`
-* moving refresh policy into `Executor`
-* direct mutation of `ContextRuntimeState` by Agent Runtime
-* adaptive context policy
-* automatic retrieval strategy mutation
-* multi-agent context coordination
-* new persistence requirements
-* changes to Context Selector
-* changes to Context Ranker
-* changes to Context Compressor
-* creation of a new generic context transport abstraction without demonstrated need
-
----
-
-## 12. Successor Task Preconditions
-
-A concrete successor task may be created only after the following are explicitly decided:
+**Effective behavior:**
 
 ```text
-1. Refresh timing semantics
-2. Current execution vs next execution behavior
-3. Exact execution integration owner
-4. Exact data crossing the integration boundary
-5. Control outcome observability requirements
-6. Failure behavior at the integration boundary
-7. Tests proving the boundary without coupling
-   execution to evaluation internals
-8. Whether the work remains Sprint 4
+Current execution
+    ↓
+complete normally
+    ↓
+evaluate context
+    ↓
+produce REFRESH decision
+    ↓
+record pending control
+    ↓
+current execution ends
+    ↓
+next execution begins
+    ↓
+apply refresh
+    ↓
+build effective context
+    ↓
+invoke Agent
 ```
 
-Only after these decisions are frozen should a task ID be assigned.
+**Rejected behavior:**
+
+```text
+Current execution
+    ↓
+REFRESH
+    ↓
+invoke Agent again
+```
+
+**Reason for rejection:**
+
+The rejected behavior conflates context maintenance with task retry/replay and would introduce undefined execution semantics, duplicate side effects, and unstable invocation context.
 
 ---
 
-## 13. Proposed Successor Scope
+## 19. Gate Closure
 
-Subject to the remaining architectural decision, the successor scope is expected to be:
+This document closes the decision gate for the timing semantics of `REFRESH`.
 
-```text
-Runtime-Level Context Control Integration
-
-Objective:
-Connect the frozen Context Runtime control capability
-to the Agent Runtime execution lifecycle.
-
-Dependencies:
-- v0.9.10-s4-context-runtime-control
-- ContextRuntimeExecutionResult
-- ContextRuntimeControlResult
-- ContextRuntimeCoordinator
-- AgentContext
-- AgentInvocationRequest
-- Executor
-
-Must preserve:
-- Context Runtime ownership
-- Agent Runtime ownership
-- decision/control separation
-- deterministic execution semantics
-- existing frozen contracts
-```
-
-No concrete class name, API, file path, or task ID is frozen by this document.
-
----
-
-## 14. Final Planning State
+The next phase is implementation work only:
 
 ```text
-Implementation status:       FROZEN
-Baseline:                    v0.9.10-s4-context-runtime-control
-
-Planning decision:           CONTINUE
-Recommended direction:       Runtime-Level Context Control Integration
-
-Integration owner:           Agent Runtime execution boundary
-Existing transport:          AgentContext / AgentInvocationRequest
-Control owner:               ContextRuntimeCoordinator
-
-Remaining decision:          REFRESH timing semantics
-
-Successor task ID:           NOT ASSIGNED
-Implementation:              NOT AUTHORIZED
+S4-011-007 — Runtime-Level Context Control Integration
 ```
 
----
-
-## 15. Roadmap State
-
-The roadmap is now:
-
-```text
-v0.9.10
-FROZEN
-   ↓
-FINAL PLANNING GATE
-   ↓
-CONTINUE
-   ↓
-Runtime-Level Context Control Integration
-   ↓
-Resolve Refresh Timing Semantics
-   ↓
-Define Successor Contract
-   ↓
-Assign Successor Task ID
-   ↓
-Implementation
-```
-
-Until the remaining refresh-timing decision is resolved:
-
-```text
-NO S4-011-007
-NO IMPLEMENTATION
-```
-
----
-
-## 16. Final Decision Record
-
-**Decision:** Continue Sprint 4.
-
-**Direction:** Runtime-Level Context Control Integration.
-
-**Reason:** Repository reconciliation confirms that Context Runtime assembly and runtime-control capabilities already exist, while their control outcomes are not yet integrated into the actual Agent Runtime execution lifecycle.
-
-**Ownership:** Agent Runtime owns execution integration; Context Runtime owns context state and control.
-
-**Transport:** Existing `AgentContext` / `AgentInvocationRequest` boundary is the natural integration surface.
-
-**Constraint:** Frozen S4-011 evaluation, feedback, decision, execution, control, and refresh contracts remain upstream and must not be reimplemented downstream.
-
-**Remaining blocker:** Define whether `REFRESH` affects the current execution, the next execution, or both.
-
-**Task assignment:** Deferred until the remaining contract decision is frozen.
-
-**Implementation authorization:** Not yet granted.
-
-*End of Document*
+The implementation must treat this document as the governing decision record for `REFRESH` timing.
