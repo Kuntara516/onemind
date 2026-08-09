@@ -4,6 +4,15 @@ from app.context_runtime.budget import (
     DefaultContextBudgetManager,
 )
 
+from app.context_runtime.control import (
+    ContextRuntimeControlResult,
+    ContextRuntimeDecisionController,
+)
+
+from app.context_runtime.evaluation.execution import (
+    ContextRuntimeExecutionResult,
+)
+
 from app.context_runtime.lifecycle import (
     DefaultContextLifecycleManager,
 )
@@ -14,6 +23,10 @@ from app.context_runtime.models import (
     ContextRuntimeState,
 )
 
+from app.context_runtime.refresh import (
+    DefaultContextRefreshEngine,
+)
+
 
 class ContextRuntimeCoordinator:
     """
@@ -22,15 +35,26 @@ class ContextRuntimeCoordinator:
     Responsible for composing:
     - Budget management
     - Lifecycle management
+    - Runtime decision execution
     """
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        decision_controller: ContextRuntimeDecisionController | None = None,
+    ) -> None:
         self._budget_manager = (
             DefaultContextBudgetManager()
         )
 
         self._lifecycle_manager = (
             DefaultContextLifecycleManager()
+        )
+
+        self._decision_controller = (
+            decision_controller
+            or ContextRuntimeDecisionController(
+                DefaultContextRefreshEngine()
+            )
         )
 
         self._context: ContextRuntimeState | None = None
@@ -122,6 +146,28 @@ class ContextRuntimeCoordinator:
         return self._lifecycle_manager.remove(
             self._context
         )
+
+    def apply_decision(
+        self,
+        execution: ContextRuntimeExecutionResult,
+    ) -> ContextRuntimeControlResult:
+        """
+        Apply an explicit runtime execution artifact.
+
+        The coordinator remains the owner of runtime state;
+        the decision controller owns action dispatch only.
+        """
+
+        self._require_context()
+
+        result = self._decision_controller.apply(
+            execution,
+            self._context,
+        )
+
+        self._context = result.state
+
+        return result
 
     def get_context(
         self,
