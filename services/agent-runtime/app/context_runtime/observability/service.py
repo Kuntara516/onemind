@@ -8,13 +8,13 @@ The service is implemented as an in-memory observability
 provider and conforms to the ContextObservabilityInterface.
 
 Sprint:
-    S4-010-001 Observability Interface Foundation
+S4-010-001 Observability Interface Foundation
 
 Author:
-    OneMind Platform
+OneMind Platform
 
 License:
-    MIT
+MIT
 """
 
 from __future__ import annotations
@@ -25,8 +25,9 @@ from uuid import UUID
 from .events import ContextRuntimeEvent
 from .interface import ContextObservabilityInterface
 from .metrics import (
-    calculate_latency,
     build_metrics_snapshot,
+    calculate_latency,
+    update_metrics_snapshot,
 )
 from .models import (
     ContextRuntimeSummary,
@@ -43,7 +44,7 @@ class ContextObservabilityService(
     In-memory Context Runtime observability provider.
 
     Implements:
-    
+
     - Trace lifecycle
     - Event recording
     - Stage timing
@@ -291,21 +292,29 @@ class ContextObservabilityService(
         self,
         trace_id: UUID,
         *,
-        retrieved_items: int = 0,
-        ranked_items: int = 0,
-        selected_items: int = 0,
-        original_tokens: int = 0,
-        compressed_tokens: int = 0,
+        retrieved_items: int | None = None,
+        ranked_items: int | None = None,
+        selected_items: int | None = None,
+        original_tokens: int | None = None,
+        compressed_tokens: int | None = None,
     ) -> None:
         """
-        Update metrics snapshot for trace.
+        Apply a partial metrics update to a trace.
+
+        ``None`` means that the existing metric value must
+        be preserved.
+
+        This allows runtime stages to update metrics
+        incrementally without resetting values produced
+        by earlier stages.
         """
 
         trace = self._require_trace(
             trace_id
         )
 
-        trace.metrics = build_metrics_snapshot(
+        trace.metrics = update_metrics_snapshot(
+            trace.metrics,
             retrieved_items=retrieved_items,
             ranked_items=ranked_items,
             selected_items=selected_items,
