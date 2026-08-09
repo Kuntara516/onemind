@@ -66,6 +66,8 @@ __all__ = [
     "ContextRuntimeFeedback",
     "ContextRuntimeDecision",
     "ContextRuntimeFeedbackConsumer",
+    "ContextRuntimeDecisionBoundary",
+    "ContextRuntimeDecisionResult",
     "ContextRuntimeDecisionExecutor",
     "ContextRuntimeExecutionResult",
 ]
