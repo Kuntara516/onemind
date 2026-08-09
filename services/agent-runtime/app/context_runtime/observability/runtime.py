@@ -449,18 +449,10 @@ class ContextRuntimeObservabilityRuntime:
         """
         Complete context runtime execution.
 
-        The completion event is emitted before the trace
-        is finalized.
+        ``finish_trace`` owns terminal event emission.
+        This helper therefore delegates directly to it
+        to guarantee exactly one FINISHED or FAILED event.
         """
-
-        self.record_event(
-            execution_id,
-            (
-                ContextRuntimeEvent.FINISHED
-                if success
-                else ContextRuntimeEvent.FAILED
-            ),
-        )
 
         return self.finish_trace(
             execution_id,

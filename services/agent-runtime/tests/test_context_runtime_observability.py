@@ -11,6 +11,8 @@ Coverage:
 - Event tracking
 - Stage timing
 - Metrics collection
+- Incremental metrics updates
+- Terminal event correctness
 - Runtime metrics validation
 - Runtime adapter integration
 - Provider boundary
@@ -38,7 +40,6 @@ from app.context_runtime.observability.metrics import (
     calculate_pipeline_health,
     calculate_selection_ratio,
 )
-
 
 # ---------------------------------------------------------------------------
 # Trace lifecycle
@@ -114,6 +115,75 @@ def test_event_tracking():
 
 
 # ---------------------------------------------------------------------------
+# Terminal event
+# ---------------------------------------------------------------------------
+
+
+def test_finish_trace_emits_exactly_one_terminal_event():
+    """
+    Verify finish_trace emits exactly one terminal event.
+    """
+
+    service = ContextObservabilityService()
+
+    trace = service.start_trace()
+
+    summary = service.finish_trace(
+        trace.trace_id
+    )
+
+    stored = service.get_trace(
+        trace.trace_id
+    )
+
+    assert stored is not None
+
+    assert [
+        event.event
+        for event in stored.events
+    ] == [
+        ContextRuntimeEvent.CONTEXT_BUILD_STARTED.value,
+        ContextRuntimeEvent.FINISHED.value,
+    ]
+
+    assert stored.metrics.event_count == 2
+    assert summary.event_count == 2
+
+
+def test_finish_trace_emits_failed_terminal_event():
+    """
+    Verify failed traces emit exactly one FAILED event.
+    """
+
+    service = ContextObservabilityService()
+
+    trace = service.start_trace()
+
+    summary = service.finish_trace(
+        trace.trace_id,
+        success=False,
+    )
+
+    stored = service.get_trace(
+        trace.trace_id
+    )
+
+    assert stored is not None
+
+    assert [
+        event.event
+        for event in stored.events
+    ] == [
+        ContextRuntimeEvent.CONTEXT_BUILD_STARTED.value,
+        ContextRuntimeEvent.FAILED.value,
+    ]
+
+    assert stored.metrics.event_count == 2
+    assert summary.event_count == 2
+    assert summary.success is False
+
+
+# ---------------------------------------------------------------------------
 # Stage timing
 # ---------------------------------------------------------------------------
 
@@ -146,6 +216,8 @@ def test_stage_timing_collection():
     stored = service.get_trace(
         trace.trace_id
     )
+
+    assert stored is not None
 
     assert (
         stored.metrics.total_stages
@@ -215,6 +287,114 @@ def test_observability_summary_contains_metrics():
     assert (
         summary.metrics.event_count
         >= 2
+    )
+
+
+def test_incremental_metrics_updates_preserve_existing_values():
+    """
+    Verify partial metric updates preserve previous values.
+    """
+
+    service = ContextObservabilityService()
+
+    trace = service.start_trace()
+
+    service.update_metrics(
+        trace.trace_id,
+        retrieved_items=10,
+    )
+
+    service.update_metrics(
+        trace.trace_id,
+        selected_items=5,
+    )
+
+    stored = service.get_trace(
+        trace.trace_id
+    )
+
+    assert stored is not None
+
+    assert (
+        stored.metrics.retrieved_items
+        == 10
+    )
+
+    assert (
+        stored.metrics.selected_items
+        == 5
+    )
+
+
+def test_incremental_metrics_preserve_derived_values():
+    """
+    Verify derived metrics are recalculated from
+    the complete accumulated snapshot.
+    """
+
+    service = ContextObservabilityService()
+
+    trace = service.start_trace()
+
+    service.update_metrics(
+        trace.trace_id,
+        retrieved_items=10,
+    )
+
+    service.update_metrics(
+        trace.trace_id,
+        selected_items=5,
+    )
+
+    service.update_metrics(
+        trace.trace_id,
+        original_tokens=1000,
+    )
+
+    service.update_metrics(
+        trace.trace_id,
+        compressed_tokens=400,
+    )
+
+    stored = service.get_trace(
+        trace.trace_id
+    )
+
+    assert stored is not None
+
+    assert (
+        stored.metrics.retrieved_items
+        == 10
+    )
+
+    assert (
+        stored.metrics.selected_items
+        == 5
+    )
+
+    assert (
+        stored.metrics.selection_ratio
+        == 0.5
+    )
+
+    assert (
+        stored.metrics.original_tokens
+        == 1000
+    )
+
+    assert (
+        stored.metrics.compressed_tokens
+        == 400
+    )
+
+    assert (
+        stored.metrics.compression_ratio
+        == 0.4
+    )
+
+    assert (
+        stored.metrics.token_reduction
+        == 600
     )
 
 
@@ -298,6 +478,77 @@ def test_runtime_observability_adapter_lifecycle():
     runtime.finish_trace(
         "execution-001",
     )
+
+
+def test_runtime_context_finished_does_not_duplicate_terminal_event():
+    """
+    Verify context_finished emits exactly one terminal event
+    through the provider lifecycle.
+    """
+
+    runtime = ContextRuntimeObservabilityRuntime()
+
+    trace = runtime.start_trace(
+        "validation-001",
+    )
+
+    assert trace is not None
+
+    summary = runtime.context_finished(
+        "validation-001",
+        success=True,
+    )
+
+    assert summary is not None
+    assert summary.success is True
+    assert summary.event_count == 2
+
+    events = [
+        event.event
+        for event in runtime.provider._traces[
+            trace.trace_id
+        ].events
+    ]
+
+    assert events == [
+        ContextRuntimeEvent.CONTEXT_BUILD_STARTED.value,
+        ContextRuntimeEvent.FINISHED.value,
+    ]
+
+
+def test_runtime_context_finished_failed_does_not_duplicate_terminal_event():
+    """
+    Verify failed context_finished emits exactly one FAILED event.
+    """
+
+    runtime = ContextRuntimeObservabilityRuntime()
+
+    trace = runtime.start_trace(
+        "validation-failed-001",
+    )
+
+    assert trace is not None
+
+    summary = runtime.context_finished(
+        "validation-failed-001",
+        success=False,
+    )
+
+    assert summary is not None
+    assert summary.success is False
+    assert summary.event_count == 2
+
+    events = [
+        event.event
+        for event in runtime.provider._traces[
+            trace.trace_id
+        ].events
+    ]
+
+    assert events == [
+        ContextRuntimeEvent.CONTEXT_BUILD_STARTED.value,
+        ContextRuntimeEvent.FAILED.value,
+    ]
 
 
 # ---------------------------------------------------------------------------
