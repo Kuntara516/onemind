@@ -14,44 +14,51 @@ from app.runtime.tracing import InMemoryTraceRecorder
 from app.executor import Executor
 from app.manager import TaskManager
 
+from app.context_runtime.factory import ContextRuntimeFactory
+
 
 # ---------------------------------------------------------
 # Dependency Initialization
 # ---------------------------------------------------------
 
 # Register built-in agents
+
 registry.register(
     DemoAgent()
 )
 
-
 # Capability Layer
+
 capability_manager = CapabilityManager()
 
-
 # Agent Invocation Layer
+
 agent_invoker = AgentInvoker(
     registry,
     capability_manager,
 )
 
-
 # Execution Trace Layer
+
 trace_recorder = InMemoryTraceRecorder()
 
+# Context Runtime Composition
+
+context_runtime = ContextRuntimeFactory().create()
 
 # Execution Pipeline
+
 executor = Executor()
 
 task_manager = TaskManager(
     executor
 )
 
-
 execution_service = ExecutionService(
     task_manager,
     agent_invoker,
     trace_recorder,
+    context_runtime,
 )
 
 
@@ -104,6 +111,7 @@ async def execute(
     )
 
     return result
+
 
 # ---------------------------------------------------------
 # Execution Trace Debug
