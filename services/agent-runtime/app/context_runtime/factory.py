@@ -2,13 +2,13 @@
 Context Runtime Factory
 
 Sprint:
-    S4-011 Context Intelligence / Decision Boundary
+S4-011 Context Intelligence / Decision Boundary
 
 Responsibilities:
 
-    - compose the default Context Runtime pipeline
-    - provide explicit dependency injection boundaries
-    - keep construction separate from runtime execution
+- compose the default Context Runtime pipeline
+- provide explicit dependency injection boundaries
+- keep construction separate from runtime execution
 
 The factory is intentionally composition-only. It must not execute
 context retrieval, evaluation, decision, refresh, or agent execution.
@@ -22,6 +22,7 @@ from .assembler import (
     ContextAssembler,
     DefaultContextAssembler,
 )
+from .coordinator import ContextRuntimeCoordinator
 from .integration import ContextRuntimeIntegration
 from .observability.runtime import ContextRuntimeObservabilityRuntime
 from .policies import SelectionPolicy
@@ -62,7 +63,11 @@ class ContextRuntimeFactory:
         selection_policy: SelectionPolicy | None = None,
         observability: ContextRuntimeObservabilityRuntime | None = None,
     ) -> None:
-        self.coordinator = coordinator
+        self.coordinator = (
+            coordinator
+            if coordinator is not None
+            else ContextRuntimeCoordinator()
+        )
         self.retriever = retriever
         self.ranker = ranker
         self.selector = selector
@@ -73,6 +78,10 @@ class ContextRuntimeFactory:
     def create(self) -> ContextRuntimeIntegration:
         """
         Create a fully composed Context Runtime integration.
+
+        Construction only:
+        no retrieval, evaluation, decision, refresh, or execution
+        is performed here.
         """
 
         retriever = self.retriever or DefaultContextRetriever(
